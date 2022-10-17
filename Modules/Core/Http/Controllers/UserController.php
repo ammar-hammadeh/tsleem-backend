@@ -33,7 +33,7 @@ class UserController extends Controller
         if ($request->has('paginate')) {
             $paginate = $request->paginate;
         }
-        $users = User::whereNull('parent_id')->with('Company')->paginate($paginate);
+        $users = User::whereNull('parent_id')->with('Company','roles')->paginate($paginate);
         return response()->json(["message" => "Users get successfully", "data" => $users], 200);
     }
 
