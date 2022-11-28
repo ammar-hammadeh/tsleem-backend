@@ -4,31 +4,44 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Core\Entities\User;
 
 class Type extends Model
 {
     use HasFactory;
     protected $fillable = [
         'name',
-        'signer',
-        'code'
+        'status',
+        'code',
+        'deleted_at'
     ];
 
     protected $appends = [
-        'signer_text',
+        'status_text',
     ];
-    public function getSignerTextAttribute($val)
+    public function getStatusTextAttribute($val)
     {
-        return ($this->signer == 1) ? __('general.active') : __('general.disable');
+        return ($this->status == 'active') ? __('general.active') : __('general.disable');
     }
 
-    public function getSignerAttribute($val)
+    public function getStatusAttribute($val)
     {
-        return ($val == 1) ? true : false;
+        return ($val == 'active') ? true : false;
     }
 
     public function setSignerAttribute($val)
     {
-        $this->attributes['signer'] = ($val == 'true') ?  1 : 0;
+        $this->attributes['signer'] = ($val == 'true') ?  'active' : 'disabled';
+    }
+
+    public function users()
+    {
+        # code...
+        return $this->hasMany(User::class, 'type_id');
+    }
+
+    public function getUser()
+    {
+        return $this->hasOne(User::class, 'type_id');
     }
 }

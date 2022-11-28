@@ -19,8 +19,9 @@ return new class extends Migration
             $table->unsignedBigInteger('form_id');
             $table->unsignedBigInteger('user_id')->nullable();
             $table->unsignedBigInteger('type_id')->nullable();
+            $table->string('sign')->nullable();
 
-            // $table->enum('status', ['signed', 'unsigned'])->default('unsigned');
+            $table->enum('form_status', ['signed', 'unsigned'])->default('unsigned');
 
             $table->timestamps();
         });

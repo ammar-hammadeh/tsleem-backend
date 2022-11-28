@@ -16,6 +16,7 @@ return [
     'Name' => 'الاسم',
     'question' => 'استفسار',
     'input type' => 'نوع حقل الإدخال',
+    'user type' => 'نوع المستخدم',
     'Pending' => 'بالإنتظار',
     'pending' => 'بالإنتظار',
     'Appointment' => 'تم تحديد الموعد',
@@ -27,6 +28,20 @@ return [
     'Approved' => 'معتمد',
     'Rejected' => 'مرفوض',
     'unsigned' => 'غير موقع',
-    'signed' => 'موقع'
-
+    'signed' => 'موقع',
+    'disabled' => 'معطل',
+    'review' => 'مراجعة',
+    "Returned" => "تم ارجاعه",
+    'company_name' => 'اسم الشركة',
+    'answered' => 'لم يتم توقيعها',
+    'appointment' => 'تم تحديد الموعد',
+    'deliverd' => 'تم التسليم',
+    'userNeedApprove' => 'تم تسجيل حساب جديد، يرجى الموافقة ',
+    'userApproved' => 'تهانيا، تمت الموافقة على حسابك',
+    'newAssignation' => 'تم تخصيص مخيم بإسم شركتكم، يرجى المراجعة',
+    'newAppointment' => 'يوجد محضر تثبيت جديد بحاجة إلى توقيع',
+    'activeRequest' => 'تم قبول طلبك',
+    'disabledRequest' => 'تم تعطيل الحساب',
+    'rejectRequest' => 'تم رفض طلبك',
+    'category name' => 'اسم التصنيف'
 ];

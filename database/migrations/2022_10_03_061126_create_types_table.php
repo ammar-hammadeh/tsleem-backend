@@ -13,11 +13,13 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('types', function (Blueprint $table) {       
+        Schema::create('types', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->tinyInteger('signer')->default(0);
+            $table->enum('status', ['active', 'disabled'])->default('active');
             $table->string('code')->nullable();
+            $table->string('name_in_form')->nullable();
+            $table->timestamp('deleted_at')->nullable();
             $table->timestamps();
         });
     }

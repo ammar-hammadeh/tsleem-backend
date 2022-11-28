@@ -15,11 +15,17 @@ class Permission extends spatiPermission
 
     protected $appends = [
         'permission_lang',
+        'group_lang',
     ];
 
     public function getPermissionLangAttribute()
     {
         return __('permission.' . $this->name);
+    }
+
+    public function getGroupLangAttribute()
+    {
+        return __('permission.' . $this->group_page);
     }
 
     // public function Roles(){

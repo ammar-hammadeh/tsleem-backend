@@ -20,7 +20,7 @@ return new class extends Migration
             $table->unsignedBigInteger('assign_camp_id');
             $table->enum('appointment_status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->enum('deliver_status', ['pending', 'approved', 'rejected'])->default('pending');
-            $table->timestamp('appointment');
+            $table->string('appointment');
             $table->timestamps();
         });
     }

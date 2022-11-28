@@ -27,9 +27,12 @@ class FormTamplateRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
+            'body' => 'nullable|string',
+            'signers' => 'required|array',
+            'isCategorized' => 'required|boolean'
         ];
     }
-    
+
     protected function failedValidation(Validator $validator)
     {
         validationHelper::failedValidation($validator, 'FormTamplate');

@@ -10,6 +10,7 @@ use App\Models\Contract;
 use App\Models\AssignCamp;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Modules\Core\Entities\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
@@ -94,7 +95,6 @@ class ContractController extends Controller
                 'assign_camps.id as assign_camps_id',
                 'assign_camps.created_at',
                 'assign_camps.status',
-                'receiver_cr',
                 'receiver_company_id',
                 'square.id as square_id',
                 'square.name as square_name',
@@ -102,7 +102,8 @@ class ContractController extends Controller
                 'camps.name as camp_name',
                 'companies.name as company_name',
                 'contracts.status',
-                'contracts.id'
+                'contracts.id',
+                'contracts.qr'
             );
         if ($request->start)
             $contract->whereDate('contracts.created_at', '>=', $request->start);
@@ -110,7 +111,7 @@ class ContractController extends Controller
             $contract->whereDate('contracts.created_at', '<=', $request->end);
 
         if ($request->square)
-            $contract->where('square_id', $request->square_id);
+            $contract->where('square.id', $request->square_id);
 
         if ($request->camp)
             $contract->where('camp_id', $request->camp_id);
@@ -124,7 +125,7 @@ class ContractController extends Controller
         $user = Auth::user();
         $user_type = Type::find($user->type_id);
         if ($user_type->code != 'admin' && $user_type->code != 'kdana' && $user_type->code != 'sharer')
-            $contract->where('users.company_id', $user->company_id);
+            $contract->where('contracts.company_id', $user->company_id);
 
         $data = $contract->paginate($paginate);
 
@@ -133,8 +134,12 @@ class ContractController extends Controller
 
     public function store(Request $request)
     {
+        $code = Str::random(30);
+        while (Contract::where('qr', $code)->first() != null) {
+            $code = Str::random(30);
+        }
         $data = array();
-        $data['qr'] = Str::random(30);
+        $data['qr'] = $code;
         $contract = Contract::create(array_merge(
             $request->input(),
             $data
@@ -150,17 +155,44 @@ class ContractController extends Controller
     public function view($id)
     {
         $contract = Contract::with('users', 'AssignCamps.getCamp', 'AssignCamps.getSquare', 'AssignCamps.getCompany', 'users', 'Ministry', 'Kidana', 'CompanyLicense.Type', 'Company.Type')->find($id);
+
+        $square = Contract::join('assign_camps', 'assign_camps.id', 'contracts.assign_camps_id')
+            ->join('square', 'assign_camps.square_id', 'square.id')
+            ->join('camps', 'assign_camps.camp_id', 'camps.id')
+            ->join('companies', 'companies.id', 'contracts.company_id')
+            ->select(
+                'square.name as square_name',
+                'camps.name as camp_name',
+                'companies.name as company_name',
+            )->where('contracts.company_id', $contract->company_id)->get();
+
+
         if ($contract != null) {
-            //     $contract = $contract->with('AssignCamps', 'users', 'Ministry', 'Kidana');
-            //     if ($contract->company_id != null)
-            //         $contract = $contract->with('AssignCamps', 'users', 'Ministry', 'Kidana', 'Company');
-            //     elseif ($contract->license != null)
-            //         $contract = $contract->with('AssignCamps', 'users', 'Ministry', 'Kidana', 'CompanyLicense');
-            return response()->json(['data' => $contract], 200);
+            return response()->json(['data' => $contract, 'square_camps' => $square], 200);
         } else {
             return response()->json(['message' => 'لايوجد بيانات مطابقة'], 404);
         }
     }
+    public function viewByCode($code)
+    {
+        $contract = Contract::where('qr', $code)->with('users', 'AssignCamps.getCamp', 'AssignCamps.getSquare', 'AssignCamps.getCompany', 'users', 'Ministry', 'Kidana', 'CompanyLicense.Type', 'Company.Type')->first();
+
+        $square = Contract::join('assign_camps', 'assign_camps.id', 'contracts.assign_camps_id')
+            ->join('square', 'assign_camps.square_id', 'square.id')
+            ->join('camps', 'assign_camps.camp_id', 'camps.id')
+            ->join('companies', 'companies.id', 'contracts.company_id')
+            ->select(
+                'square.name as square_name',
+                'camps.name as camp_name',
+                'companies.name as company_name',
+            )->where('contracts.company_id', $contract->company_id)->get();
+        if ($contract != null) {
+            return response()->json(['data' => $contract, 'square_camps' => $square], 200);
+        } else {
+            return response()->json(['message' => 'لايوجد بيانات مطابقة'], 404);
+        }
+    }
+
     public function SignContract($id)
     {
         $contract = Contract::find($id);
@@ -173,7 +205,7 @@ class ContractController extends Controller
             $contract->update([
                 'ministry' => Auth::user()->id
             ]);
-        else
+        elseif ($type->code != "admin")
             $contract->update([
                 'user_id' => Auth::user()->id
             ]);
@@ -184,28 +216,20 @@ class ContractController extends Controller
                 $contract->update([
                     'status' => 'signed'
                 ]);
-                if (!$contract->company_id == null)
-                    AssignCamp::where('id', $contract->assign_camps_id)->update(
-                        [
-                            'receiver_company_id' => $contract->company_id,
-                            'receiver_cr' => null
-                        ]
-                    );
+                $assign_camp = AssignCamp::find($contract->assign_camps_id);
+                if ($assign_camp != null) {
+                    $assign_camp->update([
+                        'contract_status' => 'signed'
+                    ]);
+                }
                 DB::commit();
-            } catch (\Exception) {
+            } catch (\Exception $e) {
                 DB::rollBack();
-                return response()->json(['message' => 'something wrong, please try again later'], 500);
+                return ['status' => 'false', 'error' => $e->getMessage(), 'message' => 'يوجد خطأ يرجى التأكد من البيانات', 'code' => 500];
             }
+            return ['status' => 'true', 'message' => 'done', 'code' => 200];
         }
-        $assign_camp = AssignCamp::find($contract->assign_camps_id);
-        if ($assign_camp != null) {
-            $assign_camp->update([
-                'contract_status' => 'signed'
-            ]);
-            return response()->json(['status' => 'signed'], 200);
-        } else {
-            return response()->json(['message' => 'لايوجد بيانات مطابقة'], 404);
-        }
+        return ['status' => 'true', 'message' => 'done', 'code' => 200];
     }
 
     public function destroy($id)
@@ -221,10 +245,116 @@ class ContractController extends Controller
 
     public function CheckQR($qr)
     {
-        $contract = Contract::where('qr', $qr)->first();
+        $contract = Contract::where('qr', $qr)->with('users', 'AssignCamps.getCamp', 'AssignCamps.getSquare', 'AssignCamps.getCompany', 'users', 'Ministry', 'Kidana', 'CompanyLicense.Type', 'Company.Type')->first();
         if ($contract != null)
-            return response()->json(['status' => true, 'message' => 'المحضر صالح']);
+            return response()->json(['data' => $contract, 'status' => true, 'message' => 'المحضر صالح']);
         else
-            return response()->json(['status' => false, 'message' => 'المحضر غير صالح']);
+            return response()->json(['data' => $contract, 'status' => false, 'message' => 'المحضر غير صالح']);
+    }
+
+    public function BulkSign(Request $request)
+    {
+        $type = Type::find(Auth::user()->type_id);
+        if ($request->select_all) {
+            $contractsID = Contract::pluck('id')->toArray();
+            foreach ($contractsID as $id) {
+                $contract = Contract::find($id);
+                if ($type->code == "kdana") {
+                    if ($contract->status != 'signed' && $contract->kidana == null)
+                        $this->SignContract($id);
+                } elseif ($type->code != "admin" && $type->code != "kdana") {
+                    if ($contract->status != 'signed' && $contract->user_id == null) {
+                        $result = $this->SignContract($id);
+                        if ($result['status'] == "false") {
+                            return response()->json(['message' => $result['message'], 'error' => $result['error']], 500);
+                        }
+                    }
+                }
+            }
+        } else {
+            foreach ($request->ids as $id) {
+                $contract = Contract::find($id);
+                if ($type->code == "kdana") {
+                    if ($contract->status != 'signed' && $contract->kidana == null)
+                        $this->SignContract($id);
+                } elseif ($type->code != "admin" && $type->code != "kdana") {
+                    if ($contract->status != 'signed' && $contract->user_id == null) {
+                        $result = $this->SignContract($id);
+                        if ($result['status'] == "false") {
+                            return response()->json(['message' => $result['message'], 'error' => $result['error']], 500);
+                        }
+                    }
+                }
+            }
+        }
+        return response()->json(['message' => 'تم التوقيع بنجاح'], 200);
+    }
+
+    public function storeByID($assign_id, $company_id)
+    {
+        try {
+
+            DB::beginTransaction();
+            $code = Str::random(30);
+            while (Contract::where('qr', $code)->first() != null) {
+                $code = Str::random(30);
+            }
+            $data = array();
+            $data['qr'] = $code;
+            $contract = Contract::create(array_merge(
+                [
+                    'assign_camps_id' => $assign_id,
+                    'company_id' => $company_id,
+                ],
+                $data
+            ));
+            $assign_camp = AssignCamp::find($contract->assign_camps_id);
+            if ($assign_camp != null) {
+                $assign_camp->update([
+                    'contract_status' => 'unsigned'
+                ]);
+            }
+            DB::commit();
+            $kdanaUsers = User::join('types', 'types.id', 'users.type_id')->where('code', 'kdana')
+                ->select('users.id')->get();
+            foreach ($kdanaUsers as $user) {
+                $notificationMessage = __('general.newAppointment');
+                $link = "/contructs";
+                (new NotificationController)->addNotification($user->id, $notificationMessage, $link);
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ['status' => 'false', 'error' => $e->getMessage(), 'message' => 'يوجد خطأ يرجى التأكد من البيانات', 'code' => 500];
+        }
+        return ['status' => 'true', 'message' => 'done', 'code' => 200];
+    }
+    public function bulkStore(Request $request)
+    {
+        if ($request->select_all) {
+            $AssignCampID = AssignCamp::pluck('id')->toArray();
+            foreach ($AssignCampID as $id) {
+                $AssignCamp = AssignCamp::find($id);
+                $contract = Contract::where('assign_camps_id', $AssignCamp->id)->first();
+                if ($contract == null) {
+                    $result = $this->storeByID($AssignCamp->id, $AssignCamp->receiver_company_id);
+                    if ($result['status'] == "false") {
+                        return response()->json(['message' => $result['message'], 'error' => $result['error']], 500);
+                    }
+                }
+            }
+        } else {
+            foreach ($request->assign_camps_ids as $id) {
+                $AssignCamp = AssignCamp::find($id);
+                $contract = Contract::where('assign_camps_id', $AssignCamp->id)->first();
+                if ($contract == null) {
+                    $result = $this->storeByID($AssignCamp->id, $AssignCamp->receiver_company_id);
+                    if ($result['status'] == "false") {
+                        return response()->json(['message' => $result['message'], 'error' => $result['error']], 500);
+                    }
+                }
+            }
+        }
+
+        return response()->json(['message' => 'تم التثبيت بنجاح', 'contract_status' => 'unsigned'], 200);
     }
 }

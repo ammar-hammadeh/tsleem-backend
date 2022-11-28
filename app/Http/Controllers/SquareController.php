@@ -38,20 +38,20 @@ class SquareController extends Controller
         return $filters;
     }
 
-    private function filterData($request)
-    {
-        $data = 1;
-        if ($request->input('square_name')) {
-            $data .= " and name = '" . $request->input('square_name') . "'";
-        }
-        if ($request->start) {
-            $data .= " and DATE(camps.created_at) >= '" . $request->from . "'";
-        }
-        if ($request->end) {
-            $data .= " and DATE(camps.created_at) <= '" . $request->to . "'";
-        }
-        return $data;
-    }
+    // private function filterData($request)
+    // {
+    //     $data = 1;
+    //     if ($request->input('square_name')) {
+    //         $data .= " and name = '" . $request->input('square_name') . "'";
+    //     }
+    //     if ($request->start) {
+    //         $data .= " and DATE(camps.created_at) >= '" . $request->from . "'";
+    //     }
+    //     if ($request->end) {
+    //         $data .= " and DATE(camps.created_at) <= '" . $request->to . "'";
+    //     }
+    //     return $data;
+    // }
 
     public function index(Request $request)
     {
@@ -59,12 +59,16 @@ class SquareController extends Controller
         if ($request->has('paginate')) {
             $paginate = $request->paginate;
         }
-        $where = $this->filterData($request);
-        if (!$where) {
-            $squares = Square::paginate($paginate);
-        } else {
-            $squares = Square::whereRaw($where)->paginate($paginate);
-        }
+
+        $query = Square::query();
+        if ($request->start != '')
+            $query->whereDate('created_at', '>=', $request->start);
+        if ($request->end != '')
+            $query->whereDate('created_at', '<=', $request->end);
+        if ($request->name != '')
+            $query->where('name', 'like', '%' . $request->name . '%');
+
+        $squares = $query->paginate($paginate);
         return response()->json(["data" => $squares, 'filters' => $this->filters()], 200);
     }
     //
@@ -103,9 +107,6 @@ class SquareController extends Controller
 
     public function update(Request $request, $id)
     {
-        if ($this->validateParameterId($id)) {
-            return response()->json(["message" => "id should be integer"], 500);
-        }
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|unique:square',
         ]);
@@ -113,23 +114,31 @@ class SquareController extends Controller
         if ($validator->fails()) {
             return response()->json(["message" => "Please Check errors", "errors" => $validator->errors()], 422);
         }
-        $type = Square::find($id);
-        DB::beginTransaction();
-        try {
-            $type->update($request->input());
-            DB::commit();
-            return response()->json(["message" => "square updated successfully"], 200);
-        } catch (\Exception $e) {
-            return response()->json(["message" => "square updated fail", "error" => $e], 500);
+        $square = Square::find($id);
+        if ($square) {
+
+            DB::beginTransaction();
+            try {
+                $square->update($request->input());
+                DB::commit();
+                return response()->json(["message" => "square updated successfully"], 200);
+            } catch (\Exception $e) {
+                return response()->json(["message" => "square updated fail", "error" => $e], 500);
+            }
+        } else {
+            return response()->json(["message" => "square id not found", "error" => "id is not correct"], 500);
         }
     }
 
     public function delete($id)
     {
-        if ($this->validateParameterId($id)) {
-            return response()->json(["message" => "id should be integer"], 500);
-        }
+        // if ($this->validateParameterId($id)) {
+        //     return response()->json(["message" => "id should be integer"], 500);
+        // }
         $type = Square::find($id);
+        if ($type == null) {
+            return response()->json(["message" => "المربع غير موجود"], 500);
+        }
         DB::beginTransaction();
         try {
             $res = $type->delete();

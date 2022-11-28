@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
         $this->call(SquareSeeder::class);
         $this->call(CampSeeder::class);
         $this->call(QuestionSeeder::class);
-        $this->call(UserSeeder::class);
+        $this->call(CategorySeeder::class);
+        // $this->call(UserSeeder::class);
     }
 }

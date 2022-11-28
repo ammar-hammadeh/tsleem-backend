@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('camps', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();
+            $table->string('name');
             $table->unsignedBigInteger('square_id');
             $table->enum('status',['notready','ready'])->default('notready');
 //            $table->timestamp('delever_date')->nullable();

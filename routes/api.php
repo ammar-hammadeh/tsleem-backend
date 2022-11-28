@@ -6,12 +6,17 @@ use App\Http\Controllers\CityController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\TypeController;
 use App\Http\Controllers\SquareController;
-use App\Http\Controllers\QuestionsController;
-use App\Http\Controllers\AppointmentController;
-use App\Http\Controllers\AssignCampController;
+use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\GeneralController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ContractController;
-use App\Http\Controllers\GeneralController;
+use App\Http\Controllers\QuestionsController;
+use App\Http\Controllers\AssignCampController;
+use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\EngineerOfficeCategoryController;
+use App\Http\Controllers\QuestionCategoryController;
+use App\Models\QuestionCategory;
 
 /*
 |--------------------------------------------------------------------------
@@ -33,6 +38,7 @@ Route::middleware(["auth:api", 'localization'])->group(function () {
     Route::prefix('general')->group(function () {
         Route::prefix('types')->group(function () {
             Route::get('/', [TypeController::class, 'index']);
+            Route::get('signer-type', [TypeController::class, 'signerType']);
             Route::post('/store', [TypeController::class, 'store']);
             Route::get('/edit/{id}', [TypeController::class, 'edit']);
             Route::post('/update/{id}', [TypeController::class, 'update']);
@@ -81,9 +87,20 @@ Route::middleware(["auth:api", 'localization'])->group(function () {
         });
         Route::group(['prefix' => 'forms'], function () {
             Route::get('/', [FormController::class, 'index']);
+            Route::post('/forms', [FormController::class, 'forms']);
+            Route::get('/forms', [FormController::class, 'forms']);
+            Route::get('/questions/{id}', [FormController::class, 'questionsByFrom']);
+            Route::post('/form-with-answerd-q', [FormController::class, 'FormWithAnswerdQ']);
+            Route::get('/get-data', [FormController::class, 'get_data']);
+            Route::get('/edit/{id}', [FormController::class, 'edit']);
             Route::post('update/{id}', [FormController::class, 'update']);
             Route::post('store', [FormController::class, 'store']);
             Route::post('form-answer/{id}', [FormController::class, 'FormAnswer']);
+            Route::post('sign-form', [FormController::class, 'SignForm']);
+            Route::post('allotment-need-sign', [FormController::class, 'AllotmentNeedSign']);
+            Route::post('form-details', [FormController::class, 'formDetails']);
+            Route::post('form-update-answer', [FormController::class, 'FormUpdateAnswer']);
+            Route::post('questions-with-answer-ids', [FormController::class, 'QuestionsWithAnswerIds']);
             Route::delete('destroy/{id}', [FormController::class, 'destroy']);
         });
         Route::group(['prefix' => 'contracts'], function () {
@@ -91,15 +108,28 @@ Route::middleware(["auth:api", 'localization'])->group(function () {
             Route::post('store', [ContractController::class, 'store']);
             Route::get('check-qr/{qr}', [ContractController::class, 'CheckQR']);
             Route::get('view/{id}', [ContractController::class, 'view']);
+            Route::get('view-by-code/{code}', [ContractController::class, 'viewByCode']);
             Route::get('sign-contract/{id}', [ContractController::class, 'SignContract']);
+            Route::post('bulk-sign', [ContractController::class, 'BulkSign']);
+            Route::post('bulk-store', [ContractController::class, 'bulkStore']);
             Route::delete('destroy/{id}', [ContractController::class, 'destroy']);
         });
         Route::group(['prefix' => 'categories'], function () {
             Route::get('/', [CategoryController::class, 'index']);
+            Route::get('/get-data', [CategoryController::class, 'get_data']);
+            Route::get('/by-type/{type_id}', [CategoryController::class, 'CategoryByType']);
             Route::get('edit/{id}', [CategoryController::class, 'edit']);
             Route::post('store', [CategoryController::class, 'store']);
             Route::post('update/{id}', [CategoryController::class, 'update']);
             Route::delete('destroy/{id}', [CategoryController::class, 'destroy']);
+        });
+
+        Route::group(['prefix' => 'engineer-office'], function () {
+            Route::get('/', [EngineerOfficeCategoryController::class, 'index']);
+            Route::get('edit/{id}', [EngineerOfficeCategoryController::class, 'edit']);
+            Route::post('store', [EngineerOfficeCategoryController::class, 'store']);
+            Route::post('update/{id}', [EngineerOfficeCategoryController::class, 'update']);
+            Route::delete('destroy/{id}', [EngineerOfficeCategoryController::class, 'destroy']);
         });
 
         Route::prefix('statistics')->group(function () {
@@ -127,5 +157,31 @@ Route::middleware(["auth:api", 'localization'])->group(function () {
             Route::post('/update/{id}', [AppointmentController::class, 'update']);
             Route::delete('/delete/{id}', [AppointmentController::class, 'delete']);
         });
+        Route::prefix('companies')->group(function () {
+            Route::get('raft-companies', [CompanyController::class, 'RaftCompany']);
+            Route::post('update', [CompanyController::class, 'update']);
+        });
+
+        // notifications
+        Route::group(['prefix' => 'notification'], function () {
+            Route::post('/user_notification', [NotificationController::class, 'userNotification']);
+            Route::get('/make_notification_seen/{id}', [NotificationController::class, 'makeNotificationSeen']);
+            Route::get('/make_all_notification_seen', [NotificationController::class, 'makeAllNotificationSeen']);
+        });
+
+        //Question Category
+        Route::group(['prefix' => 'question_category'], function () {
+            Route::post('/', [QuestionCategoryController::class, 'index']);
+            Route::get('/getbyid/{id}', [QuestionCategoryController::class, 'getCategoryByID']);
+            Route::post('store', [QuestionCategoryController::class, 'store']);
+            Route::post('update/{id}', [QuestionCategoryController::class, 'update']);
+            Route::delete('destroy/{id}', [QuestionCategoryController::class, 'destroy']);
+            Route::get('/get-data', [QuestionCategoryController::class, 'get_data']);
+            Route::get('/get_questions', [QuestionCategoryController::class, 'getQuestions']);
+        });
     });
 });
+Route::get("test-sms", [GeneralController::class, 'TestSMS']);
+Route::get("otp-sms", [GeneralController::class, 'OTPSMS']);
+Route::get("verfiy-sms", [GeneralController::class, 'VerfiySMS']);
+Route::get("test-email", [GeneralController::class, 'TestEmail']);

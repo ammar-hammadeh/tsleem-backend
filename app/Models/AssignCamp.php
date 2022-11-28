@@ -11,7 +11,14 @@ class AssignCamp extends Model
     protected $table = 'assign_camps';
     protected $guarded = [];
 
+    protected $appends = [
+        'status_text'
+    ];
 
+    public function getStatusTextAttribute($val)
+    {
+        return __('general.' . $this->status);
+    }
     public function getSquare()
     {
         return $this->belongsTo(Square::class, 'square_id', 'id');

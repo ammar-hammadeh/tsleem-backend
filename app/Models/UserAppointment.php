@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class UserAppointment extends Model
 {
     use HasFactory;
-    protected $fillable = ['assign_camp_id', 'appointment'];
+    protected $guarded = [];
     protected $table = 'users_appointments';
 
 

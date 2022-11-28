@@ -1,10 +1,15 @@
 <?php
 
+use Modules\Core\Entities\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Modules\Core\Entities\Permission;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\NotificationController;
 use Modules\Core\Http\Controllers\AuthController;
 use Modules\Core\Http\Controllers\RoleController;
-use Modules\Core\Http\Controllers\PermissionController;
 use Modules\Core\Http\Controllers\UserController;
+use Modules\Core\Http\Controllers\PermissionController;
 
 Route::prefix('auth')->group(function () {
     Route::post('register', [AuthController::class, 'register'])->name('register');
@@ -13,6 +18,7 @@ Route::prefix('auth')->group(function () {
     Route::post('password-reset', [AuthController::class, 'reset'])->name('password-reset');
     Route::post('logout', [AuthController::class, 'logout']);
     Route::get('/register-data', [AuthController::class, 'register_data']);
+    Route::get('/categories/by-type/{type_id}', [CategoryController::class, 'CategoryByType']);
     Route::middleware('auth')->group(function () {
         Route::get('me', [AuthController::class, 'me']);
         Route::get('permission-me', [AuthController::class, 'permission_me']);
@@ -54,13 +60,26 @@ Route::middleware(['auth:api', "localization"])->group(function () {
         Route::post('/change-passwored', [UserController::class, 'changePassword']);
         Route::post('/delete/{id}', [UserController::class, 'destroy'])->name('user-delete');
         Route::get('/view-user', [UserController::class, 'viewUser'])->name('view-user');
+        Route::get('/view/{id}', [UserController::class, 'view'])->name('view');
         Route::post('/pending-users', [UserController::class, 'PendingUsers'])->name('pending-users');
         Route::post('/show-employees', [UserController::class, 'ShowEmployees'])->name('show-employees');
         Route::post('/create-user', [AuthController::class, 'CreateUser'])->name('create-user');
+        Route::post('/update-user-role/{id}', [UserController::class, 'UpdateUserRole'])->name('update-user-role');
 
         Route::post('/update-me', [UserController::class, 'updateMe']);
         // Route::get('/{id}', [UserController::class, 'view'])->name('user-view');
         // Route::post('/create', [UserController::class, 'create'])->name('user-create');
 
     });
+    // Route::get('temp', function () {
+
+    //     $notificationMessage = __('general.userNeedApprove');
+    //     $link = "/users/request/";
+    //     (new NotificationController)->addNotification(1, $notificationMessage, $link);
+
+    //     $users = User::permission('user-active')->get();
+
+    //     // 'user-active',
+    //     // 'user-rejected',
+    // })->name('temp');
 });

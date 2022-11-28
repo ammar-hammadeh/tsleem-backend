@@ -41,4 +41,16 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    public function getSignatureAttribute($val)
+    {
+        if ($val != null) {
+            if (env('DISK') == 's3')
+                return url(env('AWS_URL') . $val);
+            else
+                return url('storage/' . $val);
+        } else {
+            return $val;
+        }
+    }
 }

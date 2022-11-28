@@ -19,7 +19,7 @@ return new class extends Migration
             $table->tinyInteger('type');
             $table->string('name');
             $table->string('path');
-            $table->timestamp('expire')->nullable();
+            $table->string('expire')->nullable();
             $table->timestamps();
         });
     }

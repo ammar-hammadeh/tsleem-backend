@@ -9,7 +9,6 @@
         a:hover {
             text-decoration: underline !important;
         }
-
     </style>
 </head>
 
@@ -25,9 +24,8 @@
                     </tr>
                     <tr>
                         <td style="text-align:center;">
-                            <a href="https://rakeshmandal.com" title="logo" target="_blank">
-                                <img width="60" src="https://i.ibb.co/hL4XZp2/android-chrome-192x192.png" title="logo"
-                                    alt="logo">
+                            <a href="{{ env('FRONT_URL') }}" title="logo" target="_blank">
+                                <img width="60" src="{{ env('APP_URL').'/images/logo.png' }}" title="logo" alt="Tsleem">
                             </a>
                         </td>
                     </tr>
@@ -45,20 +43,22 @@
                                     <td style="padding:0 35px;text-align:center">
                                         <h1
                                             style="color:#1e1e2d; font-weight:500; margin:0;font-size:32px;font-family:'Rubik',sans-serif;text-align:center">
-                                            Dear {{ $data['name'] }},
+                                            {{ $data['name'] }} عزيزي السيد/ة
                                         </h1>
 
-                                        <p style="font-size:15px; color:#455056; margin:8px 0 0; line-height:24px;text-align:center">
-                                            Your account has been created on the {{ env('APP_NAME') }}</strong>.</p>
+                                        <p
+                                            style="font-size:15px; color:#455056; margin:8px 0 0; line-height:24px;text-align:center">
+                                            <strong>
+                                            {{ env('APP_NAME') }} تم إنشاء حسابك في تسليم </strong></p>
 
-                                            <h1
-                                            style="color:#1e1e2d; font-weight:500; margin:0;font-size:32px;font-family:'Rubik',sans-serif;text-align:center">
-                                            Get started
-                                        </h1>
-
+                                        <p
+                                            style="font-size:15px; color:#455056; margin:8px 0 0; line-height:24px;text-align:center">
+                                            سيتم مراجعة طلبك من قبل القسم المختص في تسليم
+                                        </p>
+                                        {{-- 
                                         <a href="{{ env('FRONT_URL') }}/login"
                                             style="background:#20e277;text-decoration:none !important; display:inline-block; font-weight:500; margin-top:24px; color:#fff;text-transform:uppercase; font-size:14px;padding:10px 24px;display:inline-block;border-radius:50px;text-align:center">
-                                            Login to your Account</a>
+                                            Login to your Account</a> --}}
                                     </td>
                                 </tr>
                                 <tr>
@@ -75,7 +75,8 @@
                             <p
                                 style="font-size:14px; color:rgba(69, 80, 86, 0.7411764705882353); line-height:18px; margin:0 0 0;">
                                 You’re receiving this email because you’ve registered on &copy;
-                                <strong>{{ env('APP_NAME') }}</strong> </p>
+                                <strong>{{ env('APP_NAME') }}</strong>
+                            </p>
                         </td>
                     </tr>
                     <tr>

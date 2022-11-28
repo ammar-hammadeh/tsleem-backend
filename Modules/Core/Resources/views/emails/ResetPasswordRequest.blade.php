@@ -9,7 +9,6 @@
         a:hover {
             text-decoration: underline !important;
         }
-
     </style>
 </head>
 
@@ -25,9 +24,9 @@
                     </tr>
                     <tr>
                         <td style="text-align:center;">
-                            <a href="https://rakeshmandal.com" title="logo" target="_blank">
-                                <img width="60" src="https://i.ibb.co/hL4XZp2/android-chrome-192x192.png" title="logo"
-                                    alt="logo">
+                            <a href="{{ env('FRONT_URL') }}" title="logo" target="_blank">
+                                <img width="60" src="{{ env('APP_URL') . '/images/logo.png' }}" title="logo"
+                                    alt="Tsleem">
                             </a>
                         </td>
                     </tr>
@@ -50,17 +49,15 @@
 
                                         <p
                                             style="font-size:15px; color:#455056; margin:8px 0 0; line-height:24px;text-align:center">
-                                            You recently requested to reset the password for your
-                                            {{ env('APP_NAME') }} account. Click the button below to proceed.
+                                            <strong>
+                                            لقد قمت مؤخراً بطلب إعادة ضبط كلمة المرور في نظام تسليم, رجاءً اضغط على الزر للاستمرار
                                             </strong>.</p>
-                                        <a href="{{ env('FRONT_URL') . 'reset?token=' .$data['token'] . '&email=' . $data['email'] }}"
+                                        <a href="{{ env('FRONT_URL') . 'reset?token=' . $data['token'] . '&email=' . $data['email'] }}"
                                             style="background:#20e277;text-decoration:none !important; display:inline-block; font-weight:500; margin-top:24px; color:#fff;text-transform:uppercase; font-size:14px;padding:10px 24px;display:inline-block;border-radius:50px;text-align:center">
-                                            Reset now</a>
+                                            إعادة ضبط الآن</a>
                                         <p
                                             style="font-size:15px; color:#455056; margin:8px 0 0; line-height:24px;text-align:center">
-                                            If you did not request a password reset, please ignore this email or reply
-                                            to let us know. This password reset link is only valid for the next 60
-                                            minutes.</p>
+                                            في حال لم تكن أنت من طلب إعادة ضبط كلمة المرور، الرجاء إهمال هذا البريد، هذا الرابط متاح فقط ل 60 دقيقة</p>
                                     </td>
                                 </tr>
                                 <tr>

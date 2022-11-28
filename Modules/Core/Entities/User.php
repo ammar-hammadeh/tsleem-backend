@@ -2,19 +2,21 @@
 
 namespace Modules\Core\Entities;
 
+use App\Models\Category;
+use App\Models\City;
 use App\Models\Company;
 use App\Models\Type;
 use App\Models\UserAttachement;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
+// use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements JWTSubject
 {
-    use HasRoles, HasFactory, Notifiable, SoftDeletes;
+    use HasRoles, HasFactory, Notifiable;
 
     // protected $fillable = [
     //     'name',
@@ -31,9 +33,34 @@ class User extends Authenticatable implements JWTSubject
         'remember_token',
     ];
 
+
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    public function getAvatarAttribute($val)
+    {
+        if ($val != null) {
+            if (env('DISK') == 's3')
+                return env('AWS_URL') . $val;
+            else
+                return url('storage/' . $val);
+        } else {
+            return $val;
+        }
+    }
+
+    public function getSignatureAttribute($val)
+    {
+        if ($val != null) {
+            if (env('DISK') == 's3')
+                return url(env('AWS_URL') . $val);
+            else
+                return url('storage/' . $val);
+        } else {
+            return $val;
+        }
+    }
 
     public function getJWTIdentifier()
     {
@@ -70,5 +97,17 @@ class User extends Authenticatable implements JWTSubject
     public function Company()
     {
         return $this->hasOne(Company::class, 'owner_id');
+    }
+    public function Companies()
+    {
+        return $this->belongsTo(Company::class, 'company_id');
+    }
+    public function City()
+    {
+        return $this->belongsTo(City::class, 'city_id');
+    }
+    public function Category()
+    {
+        return $this->belongsToMany(Category::class, 'users_categories', 'category_id', 'user_id');
     }
 }

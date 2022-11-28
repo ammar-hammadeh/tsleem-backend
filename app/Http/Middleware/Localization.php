@@ -19,6 +19,7 @@ class Localization
     {
         $local = ($request->hasHeader('X-localization')) ? $request->header('X-localization') : 'ar';
         // app()->setLocale($local);
+        
         App::setLocale($local);
 
         

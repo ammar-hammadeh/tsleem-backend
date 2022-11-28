@@ -8,10 +8,9 @@ use App\Models\Company;
 use App\Models\AssignCamp;
 use Illuminate\Http\Request;
 use App\Models\UserAppointment;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\AppointmentRequest;
 use App\Models\Type;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth;
 
 class AppointmentController extends Controller
 {
@@ -35,18 +34,13 @@ class AppointmentController extends Controller
                 'items' => ''
             ],
             [
-                'name' => 'receiver_cr',
-                'value' => '',
-                'label' => __('general.Name'),
-                'type' => 'text',
-                'items' => ''
-            ],
-            [
                 'name' => 'receiver_company_id',
                 'value' => '',
                 'label' => __('general.CR Number'),
                 'type' => 'auto-complete',
-                'items' => Company::get(),
+                'items' => Company::whereHas('Type', function ($query) {
+                    $query->whereIn('code', ['raft_company', 'service_provider', 'raft_office']);
+                })->get(),
                 'itemText' => 'name',
                 'itemValue' => 'id'
             ],
@@ -62,7 +56,7 @@ class AppointmentController extends Controller
             [
                 'name' => 'camp',
                 'value' => '',
-                'label' => __('general.camp'),
+                'label' => __('general.Camp'),
                 'type' => 'auto-complete',
                 'items' => Camp::get(),
                 'itemText' => 'name',
@@ -77,6 +71,7 @@ class AppointmentController extends Controller
                     ['name' => 'pending', 'label' => __('general.pending')],
                     ['name' => 'returned', 'label' => __('general.Returned')],
                     ['name' => 'appointment', 'label' => __('general.Appointment')],
+                    ['name' => 'answered', 'label' => __('general.answered')],
                     ['name' => 'deliverd', 'label' => __('general.Deliverd')]
                 ],
                 'itemText' => 'label',
@@ -104,7 +99,6 @@ class AppointmentController extends Controller
                 'assign_camps.id',
                 'assign_camps.created_at',
                 'assign_camps.status',
-                'receiver_cr',
                 'receiver_company_id',
                 'square.id as square_id',
                 'square.name as square_name',
@@ -113,83 +107,36 @@ class AppointmentController extends Controller
                 'companies.name as company_name',
                 'contract_status'
             )
-            ->where('camps.status', 'ready');
+            ->where('camps.status', 'ready')
+            ->whereNotIn('assign_camps.status', ['appointment', 'deliverd', 'answered']);
 
-        // $CRAssignation =  AssignCamp::join('companies', 'companies.license', 'assign_camps.receiver_cr')
-        //     ->join('camps', 'camps.id', 'assign_camps.camp_id')
-        //     ->join('square', 'square.id', 'assign_camps.square_id')
-        //     ->select(
-        //         'assign_camps.id',
-        //         'assign_camps.created_at',
-        //         'assign_camps.status',
-        //         'receiver_cr',
-        //         'receiver_company_id',
-        //         'square.id as square_id',
-        //         'square.name as square_name',
-        //         'camps.id as camp_id',
-        //         'camps.name as camp_name',
-        //         'companies.name as company_name',
-        //         'contract_status'
-        //     )
-        //     ->where('camps.status', 'ready');
+        //filters
+        if ($request->start != '')
+            $IDAssignation->whereDate('created_at', '>=', $request->start);
+        if ($request->end != '')
+            $IDAssignation->whereDate('created_at', '<=', $request->end);
+        if ($request->status != '')
+            $IDAssignation->where('status', $request->status);
+        if ($request->receiver_company_id != '')
+            $IDAssignation->where('receiver_company_id', $request->receiver_company_id);
+        if ($request->square != '')
+            $IDAssignation->where('square_id', $request->square_id);
+        if ($request->camp != '')
+            $IDAssignation->where('camp_id', $request->camp_id);
+
         //check user type
         if (Auth::guard('api')->check()) {
-            $userTypeID = Auth::user()->type_id;
-            $userType = Type::where('id', $userTypeID)->value('code');
-            $userCompany = Company::where('owner_id', Auth::user()->id)->value('license');
-            if ($userType != 'admin') {
-                // $CRAssignation->where('assign_camps.assigner_cr', $userCompany);
-                $IDAssignation->where('assign_camps.assigner_cr', $userCompany);
+            $userType = Type::where('id', Auth::user()->type_id)->value('code');
+            if ($userType != 'admin' && $userType != 'raft_company') {
+                $IDAssignation->where('receiver_company_id', Auth::user()->company_id);
+            } elseif ($userType == 'raft_company') {
+                $IDAssignation->where('assigner_company_id', Auth::user()->company_id);
             }
         }
 
-        //filters
-        if ($request->start != '') {
-            // $CRAssignation->whereDate('created_at', '>=', $request->start);
-            $IDAssignation->whereDate('created_at', '>=', $request->start);
-        }
-        if ($request->end != '') {
-            // $CRAssignation->whereDate('created_at', '<=', $request->end);
-            $IDAssignation->whereDate('created_at', '<=', $request->end);
-        }
-        if ($request->status != '') {
-            // $CRAssignation->where('status', $request->status);
-            $IDAssignation->where('status', $request->status);
-        }
-        // if ($request->deliver_status != '') {
-        //     $CRAssignation->where('deliver_status', $request->deliver_status);
-        //     $IDAssignation->where('deliver_status', $request->deliver_status);
-        // }
+        $result = $IDAssignation->paginate($paginate);
 
-        if ($request->receiver_cr != '') {
-            // $CRAssignation->where('receiver_cr', $request->receiver_cr);
-            $IDAssignation->where('receiver_cr', $request->receiver_cr);
-        }
-
-        if ($request->receiver_company_id != '') {
-            // $CRAssignation->where('receiver_company_id', $request->receiver_company_id);
-            $IDAssignation->where('receiver_company_id', $request->receiver_company_id);
-        }
-
-        if ($request->square != '') {
-            // $CRAssignation->where('square_id', $request->square_id);
-            $IDAssignation->where('square_id', $request->square_id);
-        }
-
-        if ($request->camp != '') {
-            // $CRAssignation->where('camp_id', $request->camp_id);
-            $IDAssignation->where('camp_id', $request->camp_id);
-        }
-
-        // $CRAssignation = $CRAssignation->paginate($paginate);
-        // $IDAssignation = $IDAssignation->paginate($paginate);
-
-        // $CRAssignation->merge($IDAssignation);
-        // $CRAssignation = $CRAssignation->merge($IDAssignation);
-
-        $result = $IDAssignation->where('assign_camps.status','!=','appointment')->paginate($paginate);
-
-        return response()->json(['message' => 'assignations got successfully', 'data' => $result]);
+        return response()->json(['message' => 'assignations got successfully', 'filters' => $this->filters(), 'data' => $result]);
     }
 
 
@@ -200,87 +147,63 @@ class AppointmentController extends Controller
             $paginate = $request->paginate;
         else
             $paginate = env('PAGINATE');
-
         $IDAppointments =  UserAppointment::join('assign_camps', 'assign_camps.id', 'users_appointments.assign_camp_id')
-            ->join('companies', 'companies.license', 'assign_camps.receiver_cr')
+            ->join('companies', 'companies.id', 'assign_camps.receiver_company_id')
             ->join('camps', 'camps.id', 'assign_camps.camp_id')
             ->join('square', 'square.id', 'assign_camps.square_id')
-            ->select(
-                'assign_camps.id',
-                'assign_camps.created_at',
-                'assign_camps.status',
-                'receiver_cr',
-                'receiver_company_id',
-                'square.id as square_id',
-                'square.name as square_name',
-                'camps.id as camp_id',
-                'camps.name as camp_name',
-                'appointment',
-                'appointment_status',
-                'companies.name as company_name'
+            ->selectRaw(
+                'users_appointments.assign_camp_id,
+                users_appointments.id,
+                assign_camps.created_at,
+                assign_camps.status,
+                receiver_company_id,
+                square.id as square_id,
+                square.name as square_name,
+                camps.id as camp_id,
+                camps.name as camp_name,
+                appointment,
+                appointment_status,
+                companies.name as company_name,
+                date(appointment) as appointment_date'
             );
-        // 'companies.name as company_name',
-        // $CRAppointments =  UserAppointment::join('assign_camps', 'assign_camps.id', 'users_appointments.assign_camp_id')
-        //     ->join('companies', 'companies.id', 'assign_camps.receiver_company_id')
-        //     ->join('camps', 'camps.id', 'assign_camps.camp_id')
-        //     ->join('square', 'square.id', 'assign_camps.square_id')
-        //     ->select(
-        //         'assign_camps.id',
-        //         'assign_camps.created_at',
-        //         'assign_camps.status',
-        //         'receiver_cr',
-        //         'receiver_company_id',
-        //         'square.id as square_id',
-        //         'square.name as square_name',
-        //         'camps.id as camp_id',
-        //         'camps.name as camp_name',
-        //         'appointment',
-        //         'appointment_status',
-        //         'companies.name as company_name'
-        //     );
 
         //filters
-        if ($request->start != '') {
-            // $CRAppointments->whereDate('appointment', '>=', $request->start);
+        if ($request->start != '')
             $IDAppointments->whereDate('appointment', '>=', $request->start);
-        }
-        if ($request->end != '') {
-            // $CRAppointments->whereDate('appointment', '<=', $request->end);
+        if ($request->end != '')
             $IDAppointments->whereDate('appointment', '<=', $request->end);
-        }
-        if ($request->appointment_status != '') {
-            // $CRAppointments->where('appointment_status', $request->appointment_status);
+        if ($request->appointment_status != '')
             $IDAppointments->where('appointment_status', $request->appointment_status);
-        }
-        if ($request->deliver_status != '') {
-            // $CRAppointments->where('deliver_status', $request->deliver_status);
+        if ($request->deliver_status != '')
             $IDAppointments->where('deliver_status', $request->deliver_status);
-        }
-        if ($request->receiver_cr != '') {
-            // $CRAppointments->where('receiver_cr', $request->receiver_cr);
-            $IDAppointments->where('receiver_cr', $request->receiver_cr);
-        }
-        if ($request->receiver_company_id != '') {
-            // $CRAppointments->where('receiver_company_id', $request->receiver_company_id);
+        if ($request->receiver_company_id != '')
             $IDAppointments->where('receiver_company_id', $request->receiver_company_id);
-        }
-        if ($request->square != '') {
-            // $CRAppointments->where('square_id', $request->square_id);
-            $IDAppointments->where('square_id', $request->square_id);
-        }
-        if ($request->camp != '') {
-            // $CRAppointments->where('camp_id', $request->camp_id);
+        if ($request->square != '')
+            $IDAppointments->where('square.id', $request->square_id);
+        if ($request->camp != '')
             $IDAppointments->where('camp_id', $request->camp_id);
+
+        if ($request->status) {
+            $IDAppointments->where('assign_camps.status', $request->status);
+        }
+        // }else{
+        //     $IDAppointments->where('assign_camps.status','!=', 'answered')->where('assign_camps.status','!=', 'deliverd');
+        // }
+
+        //check user type
+        if (Auth::guard('api')->check()) {
+            $userType = Type::where('id', Auth::user()->type_id)->value('code');
+            if ($userType != 'admin' && $userType != 'raft_company') {
+                $IDAppointments->where('receiver_company_id', Auth::user()->company_id);
+            } elseif ($userType == 'raft_company') {
+                $IDAppointments->where('assigner_company_id', Auth::user()->company_id);
+            }
         }
 
 
-        // $query1 =  $CRAppointments->get();
-        // $query2 = $IDAppointments->get();
-
-        // $result = $query1->merge($query2);
         $result = $IDAppointments->paginate($paginate);
 
-        return response()->json(['message' => 'appointments got successfully', 'data' => $result]);
+        return response()->json(['message' => 'appointments got successfully', 'filters' => $this->filters(), 'data' => $result]);
     }
 
 
@@ -302,7 +225,9 @@ class AppointmentController extends Controller
             return response()->json(['message' => 'You\'ve already delivered this camp'], 500);
 
         UserAppointment::create($request->all());
-        $messageForApplicant = '';
+        $assignation->update([
+            'status' => 'appointment'
+        ]);
         return response()->json(['message' => 'Appointment created successfully']);
     }
 
@@ -322,7 +247,7 @@ class AppointmentController extends Controller
                 'appointment' => $request->appointment
             ]
         );
-        return response()->json(['message' => 'Appointment updated successfully']);
+        return response()->json(['message' => 'Appointment updated successfully', 'data' => $request->appointment]);
     }
 
 

@@ -64,24 +64,24 @@ class CampController extends Controller
         return $filters;
     }
 
-    private function filterData($request)
-    {
-        $data = 1;
-        if ($request->input('camp_name')) {
-            $data .= " and name = '" . $request->input('camp_name') . "'";
-        }
-        if ($request->input('status')) {
-            $data .= " and status = '" . $request->input('status') . "'";
-        }
-        if ($request->start) {
-            $data .= " and DATE(camps.created_at) >= '" . $request->from . "'";
-        }
-        if ($request->end) {
-            $data .= " and DATE(camps.created_at) <= '" . $request->to . "'";
-        }
+    // private function filterData($request)
+    // {
+    //     $data = 1;
+    //     if ($request->input('camp_name')) {
+    //         $data .= " and name = '" . $request->input('camp_name') . "'";
+    //     }
+    //     if ($request->input('status')) {
+    //         $data .= " and status = '" . $request->input('status') . "'";
+    //     }
+    //     if ($request->start) {
+    //         $data .= " and DATE(camps.created_at) >= '" . $request->from . "'";
+    //     }
+    //     if ($request->end) {
+    //         $data .= " and DATE(camps.created_at) <= '" . $request->to . "'";
+    //     }
 
-        return $data;
-    }
+    //     return $data;
+    // }
 
     public function index(Request $request)
     {
@@ -89,17 +89,28 @@ class CampController extends Controller
         if ($request->has('paginate')) {
             $paginate = $request->paginate;
         }
-        $where = $this->filterData($request);
 
-        if (!$where) {
-            $camps = Camp::with(['square'])
-                ->paginate($paginate);
-            return response()->json(["data" => $camps, 'filters' => $this->filters()], 200);
+        $camps = Camp::with('square');
+        if ($request->start != '')
+            $camps->whereDate('created_at', '>=', $request->start);
+        if ($request->end != '')
+            $camps->whereDate('created_at', '<=', $request->end);
+        if ($request->name != '')
+            $camps->where('name', 'like', '%' . $request->name . '%');
+        if ($request->square != '') {
+            $square_id = $request->square;
+            $camps->whereHas('square', function ($query) use ($square_id) {
+                $query->where('id', $square_id);
+            });
         }
-        $camps = Camp::with(['square'])
-            ->whereRaw($where)
-            ->paginate($paginate);
-        return response()->json(["data" => $camps, 'filters' => $this->filters()], 200);
+        // else
+        //     $camps->;
+
+        if ($request->status != '')
+            $camps->where('status', $request->status);
+
+        $data = $camps->paginate($paginate);
+        return response()->json(["data" => $data, 'filters' => $this->filters()], 200);
     }
 
     public function store(Request $request)
@@ -130,10 +141,11 @@ class CampController extends Controller
     public function edit($id)
     {
         $camp = Camp::find($id);
+        $squares = Square::get();
         if (!$camp) {
             return response()->json(["message" => "not found"], 404);
         }
-        return response()->json(["data" => $camp], 200);
+        return response()->json(["data" => $camp, 'squares' => $squares], 200);
     }
 
     public function get_square($id)
@@ -156,21 +168,25 @@ class CampController extends Controller
         if (!$id) {
             return response()->json(["message" => "Please Check errors", "errors" => "id isn't input"], 422);
         }
+        $camp = Camp::find($id);
         $validator = Validator::make($request->all(), [
-            'name' => 'string|unique:camps',
+            'name' => 'string|unique:camps,name,' . $camp->id,
             'square_id' => 'int|between:0,9223372036854775807',
-            'status' => 'string',
+            // 'status' => 'string',
         ]);
 
         if ($validator->fails()) {
             return response()->json(["message" => "Please Check errors", "errors" => $validator->errors()], 422);
         }
-        $type = Camp::find($id);
-        if ($type) {
+        $camp = Camp::find($id);
+        if ($camp) {
             DB::beginTransaction();
             try {
-                Camp::where('id', $id)
-                    ->update(["status" => $request->input('status')]);
+
+                $camp->update([
+                    'name' => $request->name,
+                    'square_id' => $request->square_id,
+                ]);
                 DB::commit();
                 return response()->json(["message" => "camp updated successfully"], 200);
             } catch (\Exception $e) {
@@ -198,23 +214,12 @@ class CampController extends Controller
 
     public function delete($id)
     {
-        if ($id) {
-            return response()->json(["message" => "error input", "error" => "id should be integer"], 500);
-        }
-        $type = Camp::find($id);
-        DB::beginTransaction();
-        try {
-            $res = $type->delete();
-            DB::commit();
-            if ($res) {
-                return response()->json(["message" => "success delete camp", "camp" => $type], 200);
-            } else {
-                return response()->json(["message" => "can't delete camp",], 500);
-            }
-        } catch (\Exception $e) {
-            DB::rollback();
-            return response()->json(["message" => "Please check errors", "errors" => $e], 500);
-        }
+        $camp = Camp::find($id);
+        if (!$camp)
+            return response()->json(["message" => "المخيم غير موجود"], 500);
+
+        $camp->delete();
+        return response()->json(["message" => "تم حذف المخيم"]);
     }
 
 

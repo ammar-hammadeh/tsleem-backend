@@ -22,7 +22,7 @@ return new class extends Migration
             $table->unsignedBigInteger('assign_camps_id');
             $table->unsignedBigInteger('form_id');
             $table->unsignedBigInteger('question_id');
-            $table->string('answer');
+            $table->string('answer')->nullable();
             // $table->string('name');
             // $table->enum('status',['signed','unsigned'])->default('unsigned');
             $table->timestamps();

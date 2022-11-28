@@ -6,6 +6,7 @@ use Exception;
 use App\Models\City;
 use App\Models\Type;
 use App\Models\Company;
+use App\Models\Category;
 use App\Jobs\SendEmailJob;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -21,8 +22,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Modules\Core\Mail\NewAccountMail;
+use App\Models\EngineerOffceCategories;
 use Illuminate\Support\Facades\Validator;
 use Modules\Core\Mail\ResetPasswordRequestMail;
+use App\Http\Controllers\NotificationController;
 
 class AuthController extends Controller
 {
@@ -30,7 +33,8 @@ class AuthController extends Controller
     {
         $types = Type::whereIn('code', ['service_provider', 'design_office', 'contractor'])->get();
         $cities = City::all();
-        return response()->json(["types" => $types, "cities" => $cities], 200);
+        $category = Category::all();
+        return response()->json(["types" => $types, "cities" => $cities, 'category' => $category], 200);
     }
     public function login(Request $request)
     {
@@ -53,14 +57,17 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|between:2,100',
+            'name' => 'nullable|string|between:2,100',
             'email' => 'required|string|email|max:100|unique:users',
             'password' => 'required|string|confirmed|min:6',
             'city_id' => 'nullable|integer',
             // 'type_id' => 'nullable',
             'hardcopyid' => 'nullable|string',
             'phone' => 'nullable|string',
+            // 'category_id' => 'nullable|integer',
 
+        ], [
+            'email.unique' => 'البريد الالكتروني موجود مسبقاً'
         ]);
 
         if ($validator->fails()) {
@@ -81,6 +88,9 @@ class AuthController extends Controller
             }
             $data['password'] = bcrypt($request->password);
             $data['type_id'] = Type::where('code', $request->type_id)->value('id');
+            // if ($request->type_id == 'service_provider')
+            $data['name'] = $request->owner_name;
+
             if (Auth::check()) {
                 $user_type = Auth::user()->type_id;
                 if (Type::where('id', $user_type)->value('code') == 'admin');
@@ -90,12 +100,19 @@ class AuthController extends Controller
                 $validator->validated(),
                 $data
             ));
+            if ($request->category_id) {
+                $cat = Category::find($request->category_id);
+                $user->Category()->sync($cat);
+            }
+
 
             if (Type::where('id', $request->type_id)->value('code') != 'admin') {
-                $company = $this->createCompany($request, $user);
-                if (!$company) {
+                $result = $this->createCompany($request, $user);
+                if ($result['status'] == 'false') {
                     DB::rollback();
-                    return  $company;
+                    return  response()->json(["errors" => $result['message']], $result['code']);
+                } else {
+                    $company = $result['data'];
                 }
             }
             DB::commit();
@@ -109,7 +126,7 @@ class AuthController extends Controller
                     "subject" => "Get Started, Welcome in " . env('APP_NAME')
                 );
                 if ($request->hasFile('ownerid_file')) {
-                    $ownerid_file = fileManagerHelper::storefile('ids', $request->ownerid_file, 'users');
+                    $ownerid_file = fileManagerHelper::storefile($user->id, $request->ownerid_file, 'users');
                     UserAttachement::create([
                         'name' =>  'صورة هوية المالك',
                         'user_id' =>  $user->id,
@@ -119,12 +136,16 @@ class AuthController extends Controller
                     ]);
                 }
                 dispatch(new SendEmailJob($user->email, new SendEmail($data, "NewAccount")))->onConnection('database');
+                $notificationMessage = __('general.userNeedApprove');
+                $link = "/users/request";
+                (new NotificationController)->addNotification(1, $notificationMessage, $link);
             }
 
             if (Auth::guard('api')->check())
                 $message = "تم إنشاء الحساب بنجاح";
             else
-                $message = "نود إعلامك بأن الطلب الذي قمت بتقديمه تحت الدراسة";
+                $message = "الرجاء تسجيل الدخول ورفع باقي المستندات لتفعيل الحساب";
+
             return response()->json(["message" => $message, "user" => $user], 200);
         } catch (\Exception $e) {
             DB::rollback();
@@ -136,14 +157,13 @@ class AuthController extends Controller
     public function CreateUser(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|between:2,100',
+            'name' => 'nullable|string|between:2,100',
             'email' => 'required|string|email|max:100|unique:users',
             'password' => 'required|string|confirmed|min:6',
             'city_id' => 'nullable|integer',
-            // 'type_id' => 'nullable',
+            // 'category_id' => 'nullable|integer',
             'hardcopyid' => 'nullable|string',
             'phone' => 'nullable|string',
-
         ]);
 
         if ($validator->fails()) {
@@ -166,19 +186,35 @@ class AuthController extends Controller
             $data['type_id'] = Type::where('code', $request->type_id)->value('id');
             if (Auth::check()) {
                 $user_type = Auth::user()->type_id;
-                if (Type::where('id', $user_type)->value('code') == 'admin') {
+                if (Type::where('id', $user_type)->value('code') == 'admin' || Type::where('id', $user_type)->value('code') == 'raft_company') {
                     $data['status'] = 'active';
+                }
+                if ($request->type_id != 'admin' && Type::where('id', $user_type)->value('code') != 'admin') {
+                    $data['parent_id'] = Auth::user()->id;
+                }
+
+                if (Type::where('id', $user_type)->value('code') == 'admin' && $request->type_id == 'raft_office') {
+                    $raft_company = Company::find($request->raft_company_id);
+                    $owner = $raft_company->owner_id;
+                    $data['parent_id'] = $owner;
                 }
 
                 if ($request->type_id != 'admin') {
-                    $data['parent_id'] = Auth::user()->id;
                     $data['type_id']  = Type::where('code', $request->type_id)->value('id');
                 }
             }
+            // if ($request->type_id == 'service_provider')
+            $data['name'] = $request->owner_name;
+
             $user = User::create(array_merge(
                 $validator->validated(),
                 $data
             ));
+            if ($request->category_id) {
+                $cat = Category::find($request->category_id);
+                $user->Category()->sync($cat);
+            }
+
             if (Auth::check()) {
                 $user_type = Auth::user()->type_id;
                 if (Type::where('id', $user_type)->value('code') == 'admin') {
@@ -188,10 +224,12 @@ class AuthController extends Controller
                 }
             }
             if (Type::where('id', $request->type_id)->value('code') != 'admin') {
-                $company = $this->createCompany($request, $user);
-                if (!$company) {
+                $result = $this->createCompany($request, $user);
+                if ($result['status'] == 'false') {
                     DB::rollback();
-                    return  $company;
+                    return  response()->json(["errors" => $result['message']], $result['code']);
+                } else {
+                    $company = $result['data'];
                 }
             }
             DB::commit();
@@ -232,32 +270,52 @@ class AuthController extends Controller
     public function createCompany(Request $request, $user)
     {
         $validator = Validator::make($request->all(), [
-            'company_name' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor|string|between:2,100',
+            'company_name' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor|string',
             'commercial' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor|string',
-            'commercial_expiration' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor|date',
+            'commercial_expiration' => 'required_if:type_id,consulting_office,design_office,contractor|date',
             'owner_name' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor',
-            'license' => 'required_if:type_id,service_provider,raft_company',
-            'type_id' => 'required'
+            'license' => 'required_if:type_id,service_provider',
+            'type_id' => 'required',
         ]);
 
         if ($validator->fails()) {
-            return false;
+            return array('status' => 'false', 'message' => $validator->errors(), 'data' => null, 'code' => 422);
         }
 
         $type = Type::where('code', $request->type_id)->value('id');
+        $parent_id = null;
+        $prefix = null;
+        $kroky = null;
+        if (Auth::check()) {
+            $auth_user_type = Type::find(Auth::user()->type_id);
+            if ($auth_user_type->code == 'raft_company' && $request->type_id == 'raft_office') {
+                $company = Company::where('owner_id', Auth::user()->id)->first();
+                $parent_id  = $company->id;
+                $prefix  = $company->prefix;
+                $kroky = $company->kroky;
+            }
+            if ($auth_user_type->code == 'admin' && $request->type_id == 'raft_office') {
+                $raft_company = Company::find($request->raft_company_id);
+                $prefix = $raft_company->prefix;
+                $parent_id  = $raft_company->id;
+                $kroky = $raft_company->kroky;
+            }
+        }
         $company = Company::create([
             'name' =>  $request->company_name,
             'commercial' => $request->commercial,
-            'license' => $request->license,
-            'commercial_expiration' => $request->commercial_expiration,
+            'license' => $prefix != null ? $prefix . '-' . $request->license : $request->license,
+            // 'commercial_expiration' => $request->commercial_expiration,
             'owner_id' => $user->id,
             'type_id' => $type,
             'owner_name' => $request->owner_name,
+            'kroky' => $kroky == null ? $request->kroky : $kroky,
             'owner_hardcopyid' => $request->owner_hardcopyid,
-
+            'parent_id' => $parent_id,
+            'prefix' => $prefix == null ? $request->prefix : $prefix
         ]);
         if (!$company)
-            return false;
+            return array('status' => 'false', 'message' => 'no company found', 'data' => null, 'code' => 401);
 
         $data['company_id'] = $company->id;
         $data['type'] = '0';
@@ -266,7 +324,7 @@ class AuthController extends Controller
             CompanyAttachement::create(array_merge($data, [
                 'name' =>  'السجل التجاري',
                 'path' => $commercial_file,
-                'expire' => $request->commercial_expire,
+                'expire' => $request->commercial_expiration,
             ]));
         }
         if ($request->hasFile('classification_file')) {
@@ -358,7 +416,52 @@ class AuthController extends Controller
                 'expire' => $request->memorandum_expire,
             ]));
         }
-        return $company;
+        if ($request->hasFile('seasonal_license')) {
+            $seasonal_license = fileManagerHelper::storefile($company->id, $request->seasonal_license, 'company');
+            CompanyAttachement::create(array_merge($data, [
+                'name' =>  'الرخصة الموسمية',
+                'path' => $seasonal_license,
+                'expire' => null,
+            ]));
+        }
+
+
+        if ($request->hasFile('assign_file')) {
+            $assign_file = fileManagerHelper::storefile($company->id, $request->assign_file, 'company');
+            CompanyAttachement::create(array_merge($data, [
+                'name' =>  'محضر التخصيص',
+                'path' => $assign_file,
+                'expire' => null,
+            ]));
+        }
+
+        if ($request->hasFile('delegateid')) {
+            $delegateid = fileManagerHelper::storefile($company->id, $request->delegateid, 'company');
+            CompanyAttachement::create(array_merge($data, [
+                'name' =>  'هوية المفوض',
+                'path' => $delegateid,
+                'expire' => $request->delegateid_expire,
+            ]));
+        }
+
+        if ($request->hasFile('delegation')) {
+            $delegation = fileManagerHelper::storefile($company->id, $request->delegation, 'company');
+            CompanyAttachement::create(array_merge($data, [
+                'name' =>  'التفويض',
+                'path' => $delegation,
+                'expire' => $request->delegation_expire,
+            ]));
+        }
+        if ($request->hasFile('hajj_license')) {
+            $hajj_license = fileManagerHelper::storefile($company->id, $request->hajj_license, 'company');
+            CompanyAttachement::create(array_merge($data, [
+                'name' =>  'ترخيص خدمة الحج',
+                'path' => $hajj_license,
+                'expire' => $request->hajj_license_expire,
+            ]));
+        }
+
+        return array('status' => 'true', 'message' => 'get data', 'data' => $company, 'code' => 200);
     }
 
     public function permission_me()
@@ -371,7 +474,11 @@ class AuthController extends Controller
     public function me()
     {
         return response()->json([
-            'user' => $this->guard()->user(),
+            'user' => User::with('City', 'Companies', 'Category')->find($this->guard()->user()->id),
+            'company' => Company::find($this->guard()->user()->company_id),
+            'company_file' => CompanyAttachement::whereCompanyId($this->guard()->user()->company_id)->get(),
+            'user_file' => UserAttachement::whereUserId($this->guard()->user()->id)->get(),
+            'cities' => City::all()
         ]);
     }
 
@@ -416,7 +523,7 @@ class AuthController extends Controller
 
         dispatch(new SendEmailJob($user->email, new SendEmail($data, "ResetPasswordRequest")))->onConnection('database');
         return response()->json([
-            'url' => env('APP_FRONT_URL') . '/reset?token=' . $token . '&email=' . $user->email,
+            'url' => env('FRONT_URL') . '/reset?token=' . $token . '&email=' . $user->email,
             'message' => 'Please check your inbox, we have sent a link to reset password.', 'token' => $token
         ], 200);
     }
@@ -469,14 +576,14 @@ class AuthController extends Controller
         }
         DB::beginTransaction();
         try {
-            return $user = User::where('email', '=', $request['email'])->first();
+            $user = User::where('email', '=', $request['email'])->first();
             // return $request['password'];
             // update password
             // ->where('email', '=', $request['email'])
             if (!$user) {
                 return response()->json(['message' => 'not found'], 404);
             }
-            $user->update(['name' => 'jo']);
+            $user->update(['password' => bcrypt($request->password)]);
             // remove verification token data from db
             DB::table('password_resets')->where([
                 'email' => $request['email'],
@@ -488,9 +595,10 @@ class AuthController extends Controller
                 "email" => $user->email,
                 "token" => $token
             );
+            DB::commit();
 
-            // dispatch(new SendEmailJob($user->email, new SendEmail($data, "PasswordReset")))->onConnection('database');
-            return response()->json(['message' => 'Password reset successfully'], 200);
+            dispatch(new SendEmailJob($user->email, new SendEmail($data, "PasswordReset")))->onConnection('database');
+            return response()->json(['message' => 'تم تغيير كلمة المرور بنجاح'], 200);
         } catch (\Exception $e) {
             DB::rollback();
             return response()->json(["message" => "Please check errors", "errors" => $e->getMessage()], 500);

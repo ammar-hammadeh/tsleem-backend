@@ -17,72 +17,123 @@ class PermissionSeeder extends Seeder
     public function run()
     {
         // Model::unguard();
-        Permission::insert(
+        $permissions =
             [
-                // ['name' => 'dashboard', 'guard_name' => 'api'],
-                ['name' => 'user-index', 'guard_name' => 'api'],
-                ['name' => 'user-create', 'guard_name' => 'api'],
-                // ['name' => 'user-update', 'guard_name' => 'api'],
-                ['name' => 'user-active', 'guard_name' => 'api'],
-                ['name' => 'user-rejected', 'guard_name' => 'api'],
-                ['name' => 'user-request', 'guard_name' => 'api'],
+                'user-index',
+                'user-create',
+                'user-view',
+                'user-active',
+                'user-rejected',
+                'user-request',
+                'user-update-role',
+                'user-active-account',
+                'user-disabled-account',
+                'delete_user',
 
-                ['name' => 'index-employee', 'guard_name' => 'api'],
-                ['name' => 'add-employee', 'guard_name' => 'api'],
+                'index-employee',
+                'add-employee',
 
-                ['name' => 'role-index', 'guard_name' => 'api'],
-                ['name' => 'role-create', 'guard_name' => 'api'],
-                ['name' => 'role-update', 'guard_name' => 'api'],
-                ['name' => 'role-delete', 'guard_name' => 'api'],
+                'role-index',
+                'role-create',
+                'role-update',
+                'role-delete',
 
-                ['name' => 'city-index', 'guard_name' => 'api'],
-                ['name' => 'city-create', 'guard_name' => 'api'],
-                ['name' => 'city-update', 'guard_name' => 'api'],
-                ['name' => 'city-delete', 'guard_name' => 'api'],
+                // 'city-index',
+                // 'city-create',
+                // 'city-update',
+                // 'city-delete',
 
-                ['name' => 'type-index', 'guard_name' => 'api'],
-                ['name' => 'type-update', 'guard_name' => 'api'],
+                'type-index',
+                'type-update',
 
-                ['name' => 'camp-index', 'guard_name' => 'api'],
-                ['name' => 'camp-create', 'guard_name' => 'api'],
-                ['name' => 'camp-update', 'guard_name' => 'api'],
-                ['name' => 'camp-delete', 'guard_name' => 'api'],
-                ['name' => 'camp-status', 'guard_name' => 'api'],
+                'camp-index',
+                'camp-create',
+                'camp-update',
+                'camp-delete',
+                'camp-status',
 
-                ['name' => 'square-index', 'guard_name' => 'api'],
-                ['name' => 'square-create', 'guard_name' => 'api'],
-                ['name' => 'square-update', 'guard_name' => 'api'],
-                ['name' => 'square-delete', 'guard_name' => 'api'],
+                'square-index',
+                'square-create',
+                'square-update',
+                'square-delete',
 
-                ['name' => 'category-index', 'guard_name' => 'api'],
-                ['name' => 'category-create', 'guard_name' => 'api'],
-                ['name' => 'category-update', 'guard_name' => 'api'],
-                ['name' => 'category-delete', 'guard_name' => 'api'],
+                'category-index',
+                'category-create',
+                'category-update',
+                'category-delete',
 
+                'question_category-index',
+                'question_category-create',
+                'question_category-update',
+                'question_category-delete',
 
-                ['name' => 'question-index', 'guard_name' => 'api'],
-                ['name' => 'question-create', 'guard_name' => 'api'],
-                ['name' => 'question-update', 'guard_name' => 'api'],
-                ['name' => 'question-delete', 'guard_name' => 'api'],
+                'question-index',
+                'question-create',
+                'question-update',
+                'question-delete',
 
-                ['name' => 'assign-index', 'guard_name' => 'api'],
-                ['name' => 'assign-create', 'guard_name' => 'api'],
-                ['name' => 'assign-update', 'guard_name' => 'api'],
-                ['name' => 'assign-delete', 'guard_name' => 'api'],
-                ['name' => 'assign-re-customization', 'guard_name' => 'api'],
+                'tamplate-form-index',
+                'tamplate-form-create',
+                'tamplate-form-update',
+                'tamplate-form-delete',
 
-                ['name' => 'signature-show-file', 'guard_name' => 'api'],
-                ['name' => 'signature-index', 'guard_name' => 'api'],
-                ['name' => 'signature-contract', 'guard_name' => 'api'],
+                'assign-index',
+                'assign-create',
+                'assign-update',
+                'assign-delete',
+                'assign-re-customization',
 
-                ['name' => 'appointment-create-index', 'guard_name' => 'api'],
-                ['name' => 'appointment-index', 'guard_name' => 'api'],
-                ['name' => 'appointment-send', 'guard_name' => 'api'],
-                ['name' => 'appointment-update', 'guard_name' => 'api'],
-                ['name' => 'appointment-contract', 'guard_name' => 'api'],
-                // ['name' => 'appointment-contract-view', 'guard_name' => 'api'],
+                'signature-show-file',
+                'signature-index',
+                'signature-all',
+                'signature-bulk',
 
-            ]
-        );
+                'appointment-creat-index',
+                'appointment-create',
+                'appointment-index',
+                // 'appointment-send',
+                'appointment-update',
+                'appointment-form-view',
+                'appointment-form-answer',
+                // 'appointment-form-answer-edit',
+
+                'appointment-contract',
+                'signature-contract',
+                'contruct-all',
+                'contruct-bulk',
+
+                // 'delivery-index',
+                'delivery-sign',
+                'delivery-view',
+
+            ];
+
+        $permissions_page = [
+            'user', 'user', 'user', 'user', 'user', 'user', 'user',
+            'user', 'user',
+            'employee', 'employee',
+            'role', 'role', 'role', 'role',
+            'city', 'city', 'city', 'city',
+            'type', 'type',
+            'camp', 'camp', 'camp', 'camp', 'camp',
+            'square', 'square', 'square', 'square',
+            'category', 'category', 'category', 'category',
+            'question_category', 'question_category', 'question_category', 'question_category',
+            'question', 'question', 'question', 'question',
+            'tamplate', 'tamplate', 'tamplate', 'tamplate',
+            'assign', 'assign', 'assign', 'assign', 'assign',
+            'signature', 'signature', 'signature', 'signature',
+            'appointment', 'appointment', 'appointment', 'appointment', 'appointment', 'appointment',
+            'contruct', 'contruct', 'contruct', 'contruct',
+            'delivery', 'delivery'
+        ];
+        $result = array();
+
+        for ($i = 0; $i < count($permissions); $i++) {
+
+            array_push($result, ['name' => $permissions[$i], 'group_page' => $permissions_page[$i], 'guard_name' => 'api']);
+        }
+
+        Permission::insert($result);
     }
 }

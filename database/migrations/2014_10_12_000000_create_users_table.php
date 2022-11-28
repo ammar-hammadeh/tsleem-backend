@@ -18,7 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger('type_id')->nullable();
             $table->unsignedBigInteger('city_id')->nullable();
             $table->unsignedBigInteger('parent_id')->nullable();
-            $table->unsignedBigInteger('category_id')->nullable();
+            // $table->unsignedBigInteger('category_id')->nullable();
             $table->unsignedBigInteger('company_id')->nullable();
             $table->string('name');
             $table->string('hardcopyid')->nullable();
@@ -29,7 +29,8 @@ return new class extends Migration
             $table->string('password');
             $table->string('avatar')->nullable();
             $table->string('reject_reason')->nullable();
-            $table->enum('status', ['pending', 'active', 'disabled', 'rejected'])->default('pending');
+            $table->tinyInteger('employee')->default(0);
+            $table->enum('status', ['pending', 'active', 'review', 'disabled', 'rejected'])->default('pending');
             $table->rememberToken();
             $table->timestamp('deleted_at')->nullable();
             $table->timestamps();

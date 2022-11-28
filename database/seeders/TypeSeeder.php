@@ -18,58 +18,58 @@ class TypeSeeder extends Seeder
         //
         Type::create([
             'name' => 'مدير نظام',
-            'signer' => 0,
-            'code' => 'admin'
+            'code' => 'admin',
+            'name_in_form' => '',
         ]);
         Type::create([
             'name' => 'شركات حجاج الداخل',
-            'signer' => 0,
-            'code' => 'service_provider'
+            'code' => 'service_provider',
+            'name_in_form' => 'ممثل الجهة المستفيدة'
         ]);
         Type::create([
             'name' => 'مكتب هندسي',
-            'signer' => 0,
-            'code' => 'design_office'
+            'code' => 'design_office',
+            'name_in_form' => ''
         ]);
         Type::create([
             'name' => 'جهة مشاركة',
-            'signer' => 0,
-            'code' => 'sharer'
+            'code' => 'sharer',
+            'name_in_form' => 'مندوب وزارة الحج',
         ]);
-        Type::create([
-            'name' => 'مكتب استشاري',
-            'signer' => 0,
-            'code' => 'consulting_office'
-        ]);
+        // Type::create([
+        //     'name' => 'مكتب استشاري',
+        //     'code' => 'consulting_office',
+        //     'name_in_form' => 'مندوب الاستشاري'
+        // ]);
         Type::create([
             'name' => 'مقاول',
-            'signer' => 0,
-            'code' => 'contractor'
+            'code' => 'contractor',
+            'name_in_form' => 'ممثل المقاول'
         ]);
         Type::create([
             'name' => 'شركة طوافة',
-            'signer' => 0,
-            'code' => 'raft_company'
+            'code' => 'raft_company',
+            'name_in_form' => 'ممثل الجهة المستفيدة'
         ]);
         Type::create([
             'name' => 'صيانة تسليم',
-            'signer' => 0,
-            'code' => 'maintenance'
+            'code' => 'maintenance',
+            'name_in_form' => ''
         ]);
         Type::create([
             'name' => 'تسليم',
-            'signer' => 0,
-            'code' => 'delivery'
+            'code' => 'delivery',
+            'name_in_form' => ''
         ]);
         Type::create([
             'name' => 'كدانة',
-            'signer' => 1,
-            'code' => 'kdana'
+            'code' => 'kdana',
+            'name_in_form' => 'مندوب شركة كدانة للتنمية والتطوير',
         ]);
         Type::create([
-            'name' => 'مكتب طوافة',
-            'signer' => 0,
-            'code' => 'raft_office'
+            'name' => 'مركز خدمة',
+            'code' => 'raft_office',
+            'name_in_form' => 'ممثل الجهة المستفيدة'
         ]);
     }
 }

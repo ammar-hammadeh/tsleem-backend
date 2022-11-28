@@ -17,8 +17,9 @@ class AssignCampsRequest extends FormRequest
     public function rules()
     {
         return [
+            // 'receiver_company_id' => 'required',
             'square_id' => 'required|integer',
-            'camp_id' => 'required|integer',
+            'camp_id' => 'required|array',
         ];
     }
 

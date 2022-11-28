@@ -9,5 +9,11 @@ class formsQuestions extends Model
 {
     use HasFactory;
     protected $table = 'form_questions';
+    protected $guarded = [];
 
+
+    public function Questions()
+    {
+        return $this->belongsTo(Question::class, 'question_id');
+    }
 }

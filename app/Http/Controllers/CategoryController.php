@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Type;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -11,8 +12,14 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::all();
+        $categories = Category::with('type')->get();
         return response()->json(["data" => $categories], 200);
+    }
+
+    public function get_data()
+    {
+        $types = Type::whereIn('code', ['sharer', 'design_office', 'contractor'])->get();
+        return response()->json(["data" => $types], 200);
     }
 
     public function edit($id)
@@ -21,7 +28,8 @@ class CategoryController extends Controller
         if (!$category) {
             return response()->json(["message" => "لايوجد بيانات مطابقة"], 404);
         }
-        return response()->json(["data" => $category], 200);
+        $types = Type::whereIn('code', ['sharer', 'design_office', 'contractor'])->get();
+        return response()->json(["data" => $category, 'types' => $types], 200);
     }
 
     public function store(Request $request)
@@ -67,6 +75,14 @@ class CategoryController extends Controller
         }
     }
 
+    public function CategoryByType($type_id)
+    {
+        // get id , type_id is code
+        $id = Type::whereCode($type_id)->value('id');
+        $categories = Category::where('type_id', $id)->get();
+        return response()->json(['data' => $categories], 200);
+    }
+
     public function destroy($id)
     {
         $category = Category::find($id);
@@ -77,5 +93,4 @@ class CategoryController extends Controller
             return response()->json(['message' => 'لايوجد بيانات مطابقة']);
         }
     }
-
 }

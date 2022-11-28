@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Type;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Modules\Core\Entities\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
@@ -11,8 +13,14 @@ class TypeController extends Controller
 {
     public function index()
     {
-        $types = Type::all();
+        $types = Type::whereNull('deleted_at')->get();
         return response()->json(["data" => $types], 200);
+    }
+    public function signerType()
+    {
+        $types = Type::whereNull('deleted_at')->pluck('id')->toArray();
+        $users = User::where('type_id', $types)->get();
+        return response()->json(["data" => $users], 200);
     }
 
     public function edit($id)
@@ -28,7 +36,7 @@ class TypeController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string',
-            'signer' => 'required|between:0,1',
+            // 'signer' => 'required|between:0,1',
 
         ]);
         if ($validator->fails()) {
@@ -63,7 +71,18 @@ class TypeController extends Controller
         }
         DB::beginTransaction();
         try {
-            $type->update($request->input());
+            $data['name'] = $request->name;
+            if ($request->status && $request->status == 'true') {
+                $status = 'active';
+                $data['status'] = $status;
+                $data['deleted_at'] = null;
+            } else {
+                $status = 'disabled';
+                $data['status'] = $status;
+                // $data['deleted_at'] = Carbon::now();
+            }
+            $type->update($data);
+            $user = User::where('type_id', $type->id)->update(['status' => $status]);
             DB::commit();
             return response()->json(["message" => "types updated successfully"], 200);
         } catch (\Exception $e) {

@@ -32,6 +32,6 @@ class SendEmail extends Mailable
      */
     public function build()
     {
-        return $this->subject("test")->markdown('core::emails.'.$this->template);
+        return $this->subject($this->data['subject'])->markdown('core::emails.'.$this->template);
     }
 }

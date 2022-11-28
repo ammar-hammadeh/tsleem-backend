@@ -3,7 +3,6 @@
 namespace Modules\Core\Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Database\Eloquent\Model;
 
 class CoreDatabaseSeeder extends Seeder
 {
@@ -20,5 +19,6 @@ class CoreDatabaseSeeder extends Seeder
         // $this->call(UsersSeederTableSeeder::class);
         $this->call(PermissionSeeder::class);
         $this->call(RoleSeeder::class);
+        $this->call(UsersSeederTableSeeder::class);
     }
 }
