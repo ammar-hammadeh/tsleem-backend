@@ -170,7 +170,7 @@ class UserController extends Controller
 
     public function create_data()
     {
-        $types = Type::whereNull('deleted_at')->get();
+        $types = Type::withoutDisabled()->get();
         $cities = City::all();
         // $categories = Category::all();
         $roles = Role::get();
@@ -494,10 +494,9 @@ class UserController extends Controller
                     'expire' => $request->ownerid_expire,
                 ]);
                 $notificationMessage = 'تم تحديث معلومات المستخدم';
-                $link = "/users/view/".$user->id;
+                $link = "/users/view/" . $user->id;
 
                 (new NotificationController)->addNotification(1, $notificationMessage, $link);
-
             }
             return response()->json(["message" => "نود اعلامك أنه سيتم إعادة دراسة الطلب مرة أخرى", 'user' => $user], 200);
         } catch (\Exception $e) {

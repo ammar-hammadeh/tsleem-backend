@@ -43,5 +43,7 @@ return [
     'activeRequest' => 'تم قبول طلبك',
     'disabledRequest' => 'تم تعطيل الحساب',
     'rejectRequest' => 'تم رفض طلبك',
-    'category name' => 'اسم التصنيف'
+    'category name' => 'اسم التصنيف',
+    'actionType' => 'نوع الإجراء',
+    'user' => 'الحساب'
 ];

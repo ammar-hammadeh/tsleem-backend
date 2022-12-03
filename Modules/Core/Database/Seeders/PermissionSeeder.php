@@ -106,6 +106,60 @@ class PermissionSeeder extends Seeder
                 'delivery-sign',
                 'delivery-view',
 
+
+                'location-create',
+                'location-update',
+                'location-index',
+                'location-delete',
+
+                'kitchen-index',
+                'kitchen-create',
+                'kitchen-update',
+                'kitchen-delete',
+
+                'tent-index',
+                'tent-create',
+                'tent-update',
+                'tent-delete',
+
+
+                'plot-index',
+                'plot-create',
+                'plot-update',
+                'plot-delete',
+
+
+                'establishments-index',
+                'establishments-create',
+                'establishments-update',
+                'establishments-delete',
+
+                'container-index',
+                'container-create',
+                'container-update',
+                'container-delete',
+
+                'water-tape-index',
+                'water-tape-create',
+                'water-tape-update',
+                'water-tape-delete',
+
+                'zone-index',
+                'zone-create',
+
+                'washroom-index',
+                'washroom-create',
+                'washroom-update',
+                'washroom-delete',
+
+                'electrical-meter-index',
+                'electrical-meter-create',
+                'electrical-meter-update',
+                'electrical-meter-delete',
+
+                'report-log',
+
+
             ];
 
         $permissions_page = [
@@ -125,7 +179,18 @@ class PermissionSeeder extends Seeder
             'signature', 'signature', 'signature', 'signature',
             'appointment', 'appointment', 'appointment', 'appointment', 'appointment', 'appointment',
             'contruct', 'contruct', 'contruct', 'contruct',
-            'delivery', 'delivery'
+            'delivery', 'delivery',
+            'location', 'location', 'location', 'location',
+            'kitchen', 'kitchen', 'kitchen', 'kitchen',
+            'tent', 'tent', 'tent', 'tent',
+            'plot', 'plot', 'plot', 'plot',
+            'establishments', 'establishments', 'establishments', 'establishments',
+            'container', 'container', 'container', 'container',
+            'water-tape', 'water-tape', 'water-tape', 'water-tape',
+            'zone', 'zone',
+            'washroom', 'washroom', 'washroom', 'washroom',
+            'electrical-meter', 'electrical-meter', 'electrical-meter', 'electrical-meter',
+            'report'
         ];
         $result = array();
 

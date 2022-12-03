@@ -145,7 +145,7 @@ class FormController extends Controller
         $questions = Question::with(['inputs'])->get();
         $types = Type::whereNotIn('code', [
             'raft_office', 'raft_company', 'service_provider'
-        ])->get();
+        ])->withoutDisabled()->get();
         $categories = QuestionCategory::get();
         return response()->json(['questions' => $questions, 'types' => $types, 'categories' => $categories]);
     }
@@ -156,7 +156,7 @@ class FormController extends Controller
         $categories = QuestionCategory::get();
         $types = Type::whereNotIn('code', [
             'raft_office', 'raft_company', 'service_provider'
-        ])->get();
+        ])->withoutDisabled()->get();
         $form = FormTamplate::find($id);
         if ($form != null) {
             $isCategorized = $form->isCategorized;
@@ -220,11 +220,22 @@ class FormController extends Controller
                         DB::table('form_questions')->where('form_id', $form->id)->delete();
                     $categories = QuestionCategory::find($request->category_ids);
                     $form->Categories()->sync($categories);
+
+                    //delete old answers for old questions
+                    $questions = DB::table('question_category_relations')
+                        ->whereNotIn('question_category_id', $request->category_ids)
+                        ->pluck('question_id');
+                    TasleemFormAnswers::where('form_id', $form->id)
+                        ->whereNotIn('question_id', $questions)->delete();
                 } else {
                     if ($isCategorized != $form->isCategorized)
                         DB::table('form_categories')->where('form_id', $form->id)->delete();
                     $questions = Question::find($request->question_ids);
                     $form->Questions()->sync($questions);
+
+                    //delete old answers for old questions
+                    TasleemFormAnswers::where('form_id', $form->id)
+                        ->whereNotIn('question_id', $request->question_ids)->delete();
                 }
 
                 FormSigner::where('form_id', $id)->delete();

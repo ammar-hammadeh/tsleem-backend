@@ -89,6 +89,56 @@
         'user-active-account' => 'تفعيل حساب مستخدم',
         'user-disabled-account' => 'تعطيل حساب مستخدم',
 
+        // GIS
+        'location-index' => 'عرض المواقع',
+        'location-create' => ' انشاء موقع',
+        'location-update' => 'تعديل موقع',
+        'location-delete' => 'حذف موقع',
+
+        'kitchen-index' => 'عرض المطابخ',
+        'kitchen-create' => ' انشاء مطبخ',
+        'kitchen-update' => 'تعديل مطبخ',
+        'kitchen-delete' => 'حذف مطبخ',
+
+        'tent-index' => 'عرض المخيمات',
+        'tent-create' => ' انشاء خيمة',
+        'tent-update' => 'تعديل خيمة',
+        'tent-delete' => 'حذف خيمة',
+
+        'plot-index' => 'عرض الأراضي',
+        'plot-create' => 'انشاء أرض',
+        'plot-update' => 'تعديل أرض',
+        'plot-delete' => 'حذف أرض',
+
+        'establishments-index' => 'عرض المؤسسات',
+        'establishments-create' => 'انشاء مؤسسة',
+        'establishments-update' => 'تعديل مؤسسة',
+        'establishments-delete' => 'حذف مؤسسة',
+
+        'container-index' => 'عرض الحاويات',
+        'container-create' => 'انشاء حاوية',
+        'container-update' => 'تعديل حاوية',
+        'container-delete' => 'حذف حاوية',
+
+        'zone-index' => 'عرض المناطق',
+        'zone-create' => 'انشاء منطقة',
+
+        'water-tape-index' => 'عرض أنابيب مياه',
+        'water-tape-create' => 'انشاء أنبوبة مياه',
+        'water-tape-update' => 'تعديل أنبوبة مياه',
+        'water-tape-delete' => 'حذف أنبوبة مياه',
+
+        'washroom-index' => 'عرض الحمامات',
+        'washroom-create' => 'انشاء الحمام',
+        'washroom-update' => 'تعديل الحمام',
+        'washroom-delete' => 'حذف الحمام',
+
+        'electrical-meter-index' => 'عرض عدادات كهربائية',
+        'electrical-meter-create' => 'انشاء عداد كهربائية',
+        'electrical-meter-update' => 'تعديل عداد كهربائية',
+        'electrical-meter-delete' => 'حذف عداد كهربائية',
+
+        'report-log' => 'log',
 
         'user' => 'المستخدمين',
         'employee' => 'الموظفيين',

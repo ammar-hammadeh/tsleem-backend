@@ -44,4 +44,9 @@ class Type extends Model
     {
         return $this->hasOne(User::class, 'type_id');
     }
+
+    public function scopeWithoutDisabled($query)
+    {
+        return $query->where('status', '!=', 'disabled')->whereNull('deleted_at');
+    }
 }

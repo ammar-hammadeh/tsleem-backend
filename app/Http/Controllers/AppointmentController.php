@@ -193,7 +193,7 @@ class AppointmentController extends Controller
         //check user type
         if (Auth::guard('api')->check()) {
             $userType = Type::where('id', Auth::user()->type_id)->value('code');
-            if ($userType != 'admin' && $userType != 'raft_company') {
+            if ($userType != 'admin' && $userType != 'raft_company' && $userType != 'kdana') {
                 $IDAppointments->where('receiver_company_id', Auth::user()->company_id);
             } elseif ($userType == 'raft_company') {
                 $IDAppointments->where('assigner_company_id', Auth::user()->company_id);
