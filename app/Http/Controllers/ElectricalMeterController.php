@@ -12,7 +12,7 @@ class ElectricalMeterController extends Controller
 {
     public function index()
     {
-        $est = ElectricalMeter::with('Location', 'Camp')->get();
+        $est = ElectricalMeter::with('Camp')->get();
         return response()->json(['data' => $est], 200);
     }
     public function get_data()
@@ -24,12 +24,14 @@ class ElectricalMeterController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'nullable|string',
-            'type' => 'nullable|string',
             'subscription_number' => 'nullable|string',
             'metric_capacity' => 'nullable|string',
-            'closest_cabin' => 'nullable|string',
-            'location_id' => 'nullable|integer',
+            'metric_status' => 'nullable|integer',
+            'payment_status' => 'nullable|integer',
+            'last_read' => 'nullable|string',
+            'shared' => 'nullable|integer',
+            'note' => 'nullable|string',
+
         ]);
         if ($validator->fails()) {
             return response()->json(["message" => "Please Check errors", "errors" => $validator->errors()], 422);
@@ -41,12 +43,13 @@ class ElectricalMeterController extends Controller
     public function storeWitCamps(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'nullable|string',
-            'type' => 'nullable|string',
             'subscription_number' => 'nullable|string',
             'metric_capacity' => 'nullable|string',
-            'closest_cabin' => 'nullable|string',
-            'location_id' => 'nullable|integer',
+            'metric_status' => 'nullable|integer',
+            'payment_status' => 'nullable|integer',
+            'last_read' => 'nullable|string',
+            'shared' => 'nullable|integer',
+            'note' => 'nullable|string',
         ]);
         if ($validator->fails()) {
             return response()->json(["message" => "Please Check errors", "errors" => $validator->errors()], 422);
@@ -80,12 +83,13 @@ class ElectricalMeterController extends Controller
             return response()->json(["message" => "Data not found"], 500);
         } else {
             $validator = Validator::make($request->all(), [
-                'name' => 'nullable|string',
-                'type' => 'nullable|string',
                 'subscription_number' => 'nullable|string',
                 'metric_capacity' => 'nullable|string',
-                'closest_cabin' => 'nullable|string',
-                'location_id' => 'nullable|integer',
+                'metric_status' => 'nullable|integer',
+                'payment_status' => 'nullable|integer',
+                'last_read' => 'nullable|string',
+                'shared' => 'nullable|integer',
+                'note' => 'nullable|string',
             ]);
             if ($validator->fails()) {
                 return response()->json(["message" => "Please Check errors", "errors" => $validator->errors()], 422);
@@ -102,12 +106,13 @@ class ElectricalMeterController extends Controller
             return response()->json(["message" => "Data not found"], 500);
         } else {
             $validator = Validator::make($request->all(), [
-                'name' => 'nullable|string',
-                'type' => 'nullable|string',
                 'subscription_number' => 'nullable|string',
                 'metric_capacity' => 'nullable|string',
-                'closest_cabin' => 'nullable|string',
-                'location_id' => 'nullable|integer',
+                'metric_status' => 'nullable|integer',
+                'payment_status' => 'nullable|integer',
+                'last_read' => 'nullable|string',
+                'shared' => 'nullable|integer',
+                'note' => 'nullable|string',
             ]);
             if ($validator->fails()) {
                 return response()->json(["message" => "Please Check errors", "errors" => $validator->errors()], 422);

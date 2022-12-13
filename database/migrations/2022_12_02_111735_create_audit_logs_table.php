@@ -17,6 +17,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('user_id')->index();
             $table->unsignedBigInteger('action_id')->index();
+            $table->text('note');
             $table->timestamps();
         });
     }

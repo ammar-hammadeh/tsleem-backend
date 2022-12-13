@@ -17,6 +17,9 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('input_id')->nullable();
             $table->string('title');
+            // $table->tinyInteger('attachement')->default(0);
+            // $table->tinyInteger('note')->default(0);
+            // $table->integer('attachement_number')->nullable();
             $table->timestamps();
         });
     }

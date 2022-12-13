@@ -10,16 +10,19 @@ class CompanyAttachement extends Model
     use HasFactory;
     protected $table = 'company_attachments';
     protected $guarded = [];
+    protected $appends = [
+        'full_path'
+    ];
 
-    public function getPathAttribute($val)
+    public function getFullPathAttribute($val)
     {
-        if ($val != null) {
+        if ($this->path != null) {
             if (env('DISK') == 's3')
-                return url(env('AWS_URL')  . $val);
+                return url(env('AWS_URL')  . $this->path);
             else
-                return url('storage/' . $val);
+                return url('storage/' . $this->path);
         } else {
-            return $val;
+            return $this->path;
         }
     }
 }

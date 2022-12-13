@@ -23,6 +23,7 @@ return new class extends Migration
             $table->unsignedBigInteger('form_id');
             $table->unsignedBigInteger('question_id');
             $table->string('answer')->nullable();
+            $table->string('note')->nullable();
             // $table->string('name');
             // $table->enum('status',['signed','unsigned'])->default('unsigned');
             $table->timestamps();

@@ -66,8 +66,11 @@ class QuestionCategoryController extends Controller
     {
         try {
             DB::beginTransaction();
+            $question_ids = $request->question_ids;
             $category = QuestionCategory::create(['name' => $request->name]);
-            $questions = Question::find($request->question_ids);
+            $questions = Question::find($question_ids)->sortBy(function ($el) use ($question_ids) {
+                return array_search($el->getKey(), $question_ids);
+            });
             $category->getQuestion()->sync($questions);
             DB::commit();
             return response()->json(['message' => 'تمت اللإضافة بنجاح']);

@@ -176,7 +176,7 @@ class CompanyController extends Controller
 
         if ($request->hasFile('business_file')) {
             $attach = CompanyAttachement::where('company_id', $company->id)->where('name', 'رخصة نشاط تجاري')->first();
-            if ($attach != null){
+            if ($attach != null) {
                 if (Storage::disk('company')->exists($company->id . '/' . $attach->path)) {
                     Storage::delete('public/company/' . $attach->path);
                 }
@@ -203,7 +203,7 @@ class CompanyController extends Controller
         if ($request->hasFile('social_security')) {
             $social_security = fileManagerHelper::storefile($company->id, $request->social_security, 'company');
             $attach = CompanyAttachement::where('company_id', $company->id)->where('name', 'رخصة التأمينات الإجتماعية')->first();
-            if ($attach != null){
+            if ($attach != null) {
                 if (Storage::disk('company')->exists($company->id . '/' . $attach->path)) {
                     Storage::delete('public/company/' . $attach->path);
                 }
@@ -230,7 +230,7 @@ class CompanyController extends Controller
         if ($request->hasFile('zakat_income')) {
             $zakat_income = fileManagerHelper::storefile($company->id, $request->zakat_income, 'company');
             $attach = CompanyAttachement::where('company_id', $company->id)->where('name', 'رخصة الزكاة والدخل')->first();
-            if ($attach != null){
+            if ($attach != null) {
                 if (Storage::disk('company')->exists($company->id . '/' . $attach->path)) {
                     Storage::delete('public/company/' . $attach->path);
                 }
@@ -256,7 +256,7 @@ class CompanyController extends Controller
         if ($request->hasFile('saudization')) {
             $saudization = fileManagerHelper::storefile($company->id, $request->saudization, 'company');
             $attach = CompanyAttachement::where('company_id', $company->id)->where('name', 'شهادة السعودة')->first();
-            if ($attach != null){
+            if ($attach != null) {
                 if (Storage::disk('company')->exists($company->id . '/' . $attach->path)) {
                     Storage::delete('public/company/' . $attach->path);
                 }
@@ -281,7 +281,7 @@ class CompanyController extends Controller
         if ($request->hasFile('chamber_commerce')) {
             $chamber_commerce = fileManagerHelper::storefile($company->id, $request->chamber_commerce, 'company');
             $attach = CompanyAttachement::where('company_id', $company->id)->where('name', 'شهادة الغرفة التجارية')->first();
-            if ($attach != null){
+            if ($attach != null) {
                 if (Storage::disk('company')->exists($company->id . '/' . $attach->path)) {
                     Storage::delete('public/company/' . $attach->path);
                 }
@@ -307,7 +307,7 @@ class CompanyController extends Controller
         if ($request->hasFile('tax_registration')) {
             $tax_registration = fileManagerHelper::storefile($company->id, $request->tax_registration, 'company');
             $attach = CompanyAttachement::where('company_id', $company->id)->where('name', 'شهادة تسجيل الضريبة')->first();
-            if ($attach != null){
+            if ($attach != null) {
                 if (Storage::disk('company')->exists($company->id . '/' . $attach->path)) {
                     Storage::delete('public/company/' . $attach->path);
                 }
@@ -333,7 +333,7 @@ class CompanyController extends Controller
         if ($request->hasFile('wage_protection')) {
             $wage_protection = fileManagerHelper::storefile($company->id, $request->wage_protection, 'company');
             $attach = CompanyAttachement::where('company_id', $company->id)->where('name', 'شهادة حماية الأجور')->first();
-            if ($attach != null){
+            if ($attach != null) {
                 if (Storage::disk('company')->exists($company->id . '/' . $attach->path)) {
                     Storage::delete('public/company/' . $attach->path);
                 }
@@ -359,7 +359,7 @@ class CompanyController extends Controller
         if ($request->hasFile('memorandum_association')) {
             $memorandum_association = fileManagerHelper::storefile($company->id, $request->memorandum_association, 'company');
             $attach = CompanyAttachement::where('company_id', $company->id)->where('name', 'عقد التأسيس')->first();
-            if ($attach != null){
+            if ($attach != null) {
                 if (Storage::disk('company')->exists($company->id . '/' . $attach->path)) {
                     Storage::delete('public/company/' . $attach->path);
                 }
@@ -384,12 +384,11 @@ class CompanyController extends Controller
         if ($request->hasFile('seasonal_license')) {
             $seasonal_license = fileManagerHelper::storefile($company->id, $request->seasonal_license, 'company');
             $attach = CompanyAttachement::where('company_id', $company->id)->where('name', 'الرخصة الموسمية')->first();
-            if ($attach != null){
+            if ($attach != null) {
                 if (Storage::disk('company')->exists($company->id . '/' . $attach->path)) {
                     Storage::delete('public/company/' . $attach->path);
                 }
                 $attach->delete();
-
             }
 
             CompanyAttachement::create(array_merge($data, [
@@ -402,7 +401,7 @@ class CompanyController extends Controller
         if ($request->hasFile('assign_file')) {
             $assign_file = fileManagerHelper::storefile($company->id, $request->assign_file, 'company');
             $attach = CompanyAttachement::where('company_id', $company->id)->where('name', 'محضر التخصيص')->first();
-            if ($attach != null){
+            if ($attach != null) {
                 if (Storage::disk('company')->exists($company->id . '/' . $attach->path)) {
                     Storage::delete('public/company/' . $attach->path);
                 }
@@ -430,7 +429,7 @@ class CompanyController extends Controller
         if ($request->hasFile('delegateid')) {
             $delegateid = fileManagerHelper::storefile($company->id, $request->delegateid, 'company');
             $attach = CompanyAttachement::where('company_id', $company->id)->where('name', 'هوية المفوض')->first();
-            if ($attach != null){
+            if ($attach != null) {
                 if (Storage::disk('company')->exists($company->id . '/' . $attach->path)) {
                     Storage::delete('public/company/' . $attach->path);
                 }
@@ -457,7 +456,7 @@ class CompanyController extends Controller
         if ($request->hasFile('delegation')) {
             $delegation = fileManagerHelper::storefile($company->id, $request->delegation, 'company');
             $attach = CompanyAttachement::where('company_id', $company->id)->where('name', 'التفويض')->first();
-            if ($attach != null){
+            if ($attach != null) {
                 if (Storage::disk('company')->exists($company->id . '/' . $attach->path)) {
                     Storage::delete('public/company/' . $attach->path);
                 }
@@ -484,7 +483,7 @@ class CompanyController extends Controller
         if ($request->hasFile('hajj_license')) {
             $hajj_license = fileManagerHelper::storefile($company->id, $request->hajj_license, 'company');
             $attach = CompanyAttachement::where('company_id', $company->id)->where('name', 'ترخيص خدمة الحج')->first();
-            if ($attach != null){
+            if ($attach != null) {
                 if (Storage::disk('company')->exists($company->id . '/' . $attach->path)) {
                     Storage::delete('public/company/' . $attach->path);
                 }
@@ -497,6 +496,24 @@ class CompanyController extends Controller
                 'expire' => $request->hajj_license_expire,
             ]));
         }
+
+        if ($request->hasFile('secret_information')) {
+            $secret_information = fileManagerHelper::storefile($company->id, $request->secret_information, 'company');
+            $attach = CompanyAttachement::where('company_id', $company->id)->where('name', 'نموذج اتفاقية سرية المعلومات NDA وإقرار الاتفاقية الداخلية مصدق من الغرفة التجارية')->first();
+            if ($attach != null) {
+                if (Storage::disk('company')->exists($company->id . '/' . $attach->path)) {
+                    Storage::delete('public/company/' . $attach->path);
+                }
+                $attach->delete();
+            }
+
+            CompanyAttachement::create(array_merge($data, [
+                'name' =>  'نموذج اتفاقية سرية المعلومات NDA وإقرار الاتفاقية الداخلية مصدق من الغرفة التجارية',
+                'path' => $secret_information,
+                'expire' => null,
+            ]));
+        }
+
         return response()->json(["message" => "Company updated successfully"], 200);
     }
 }

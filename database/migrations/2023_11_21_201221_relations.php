@@ -100,7 +100,7 @@ class Relations extends Migration
             $table->foreign('form_id')->references('id')->on('form_tamplates')->onDelete('cascade');
         });
 
-        Schema::create('audit_logs', function (Blueprint $table) {
+        Schema::table('audit_logs', function (Blueprint $table) {
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('action_id')->references('id')->on('log_actions')->onDelete('cascade');
         });
@@ -200,7 +200,7 @@ class Relations extends Migration
             $table->dropForeign('form_id');
         });
 
-        Schema::create('audit_logs', function (Blueprint $table) {
+        Schema::table('audit_logs', function (Blueprint $table) {
             $table->dropForeign('user_id');
             $table->dropForeign('action_id');
         });

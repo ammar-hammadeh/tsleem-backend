@@ -72,6 +72,7 @@ Route::middleware(["auth:api", 'localization'])->group(function () {
             Route::post('/', [CampController::class, 'index']);
             Route::get('/camps', [CampController::class, 'camps']);
             Route::get('/get-square', [CampController::class, 'get_square']);
+            Route::get('/get-all-data', [CampController::class, 'getData']);
             Route::post('/store', [CampController::class, 'store']);
             Route::delete('/delete/{id}', [CampController::class, 'delete']);
             Route::get('/edit/{id}', [CampController::class, 'edit']);
@@ -106,13 +107,14 @@ Route::middleware(["auth:api", 'localization'])->group(function () {
             Route::get('/edit/{id}', [FormController::class, 'edit']);
             Route::post('update/{id}', [FormController::class, 'update']);
             Route::post('store', [FormController::class, 'store']);
-            Route::post('form-answer/{id}', [FormController::class, 'FormAnswer']);
             Route::post('sign-form', [FormController::class, 'SignForm']);
             Route::post('allotment-need-sign', [FormController::class, 'AllotmentNeedSign']);
             Route::post('form-details', [FormController::class, 'formDetails']);
             Route::post('form-update-answer', [FormController::class, 'FormUpdateAnswer']);
             Route::post('questions-with-answer-ids', [FormController::class, 'QuestionsWithAnswerIds']);
+            Route::post('upload-answer-attach', [FormController::class, 'UploadAnswerAttach']);
             Route::delete('destroy/{id}', [FormController::class, 'destroy']);
+            Route::delete('delete-answer-attach/{id}', [FormController::class, 'DeleteAnswerAttach']);
         });
         Route::group(['prefix' => 'contracts'], function () {
             Route::post('/', [ContractController::class, 'index']);

@@ -13,10 +13,10 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('log_actions', function (Blueprint $table) {
+        Schema::create('answers_attachement', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            // $table->string('code');
+            $table->unsignedBigInteger('answer_id');
+            $table->string('path');
             $table->timestamps();
         });
     }
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('log_actions');
+        Schema::dropIfExists('answers_attachement');
     }
 };

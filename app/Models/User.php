@@ -42,15 +42,19 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
-    public function getSignatureAttribute($val)
+    protected $appends = [
+        'full_signature'
+    ];
+
+    public function getFullSignatureAttribute($val)
     {
-        if ($val != null) {
+        if ($this->signature != null) {
             if (env('DISK') == 's3')
-                return url(env('AWS_URL') . $val);
+                return url(env('AWS_URL') . $this->signature);
             else
-                return url('storage/' . $val);
+                return url('storage/' . $this->signature);
         } else {
-            return $val;
+            return $this->signature;
         }
     }
 }

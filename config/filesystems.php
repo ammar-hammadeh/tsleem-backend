@@ -33,7 +33,7 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'url' => env('APP_URL') . '/storage',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -41,7 +41,7 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'url' => env('APP_URL') . '/storage',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -72,6 +72,12 @@ return [
         'company' => [
             'driver' => 'local',
             'root' => storage_path('app/public/company'),
+            'url' => env('APP_URL') . '/public',
+            'visibility' => 'public',
+        ],
+        'answers' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/answers'),
             'url' => env('APP_URL') . '/public',
             'visibility' => 'public',
         ],

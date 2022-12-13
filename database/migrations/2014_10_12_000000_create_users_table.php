@@ -20,7 +20,7 @@ return new class extends Migration
             $table->unsignedBigInteger('parent_id')->nullable();
             // $table->unsignedBigInteger('category_id')->nullable();
             $table->unsignedBigInteger('company_id')->nullable();
-            $table->string('name');
+            $table->string('name')->nullable();
             $table->string('hardcopyid')->nullable();
             $table->string('phone')->nullable();
             $table->string('signature')->nullable();

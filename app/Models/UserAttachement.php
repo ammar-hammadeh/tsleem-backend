@@ -11,15 +11,19 @@ class UserAttachement extends Model
     protected $table = 'users_attachements';
     protected $guarded = [];
 
-    public function getPathAttribute($val)
+    protected $appends = [
+        'full_path'
+    ];
+
+    public function getFullPathAttribute($val)
     {
-        if ($val != null) {
+        if ($this->path != null) {
             if (env('DISK') == 's3')
-                return url(env('AWS_URL')  . $val);
+                return url(env('AWS_URL')  . $this->path);
             else
-                return url('storage/' . $val);
+                return url('storage/' . $this->path);
         } else {
-            return $val;
+            return $this->path;
         }
     }
 }

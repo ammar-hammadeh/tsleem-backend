@@ -111,13 +111,13 @@ class ContractController extends Controller
             $contract->whereDate('contracts.created_at', '<=', $request->end);
 
         if ($request->square)
-            $contract->where('square.id', $request->square_id);
+            $contract->where('square.id', $request->square);
 
         if ($request->camp)
-            $contract->where('camp_id', $request->camp_id);
+            $contract->where('camps.id', $request->camp);
 
         if ($request->company)
-            $contract->where('company_id', $request->company_id);
+            $contract->where('companies.id', $request->company);
 
         if ($request->status)
             $contract->where('status', $request->status);

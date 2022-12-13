@@ -114,7 +114,7 @@ class UserController extends Controller
             'value' => '',
             'label' => __('general.user type'),
             'type' => 'auto-complete',
-            'items' => Type::get(),
+            'items' => Type::whereNull('deleted_at')->get(),
             'itemText' => 'name',
             'itemValue' => 'id'
         ]);
@@ -977,6 +977,23 @@ class UserController extends Controller
             ]));
         }
 
+        if ($request->hasFile('secret_information')) {
+            $secret_information = fileManagerHelper::storefile($company->id, $request->secret_information, 'company');
+            $attach = CompanyAttachement::where('company_id', $company->id)->where('name', 'نموذج اتفاقية سرية المعلومات NDA وإقرار الاتفاقية الداخلية مصدق من الغرفة التجارية')->first();
+            if ($attach != null) {
+                if (Storage::disk('company')->exists($company->id . '/' . $attach->path)) {
+                    Storage::delete('public/company/' . $attach->path);
+                }
+                $attach->delete();
+            }
+
+            CompanyAttachement::create(array_merge($data, [
+                'name' =>  'نموذج اتفاقية سرية المعلومات NDA وإقرار الاتفاقية الداخلية مصدق من الغرفة التجارية',
+                'path' => $secret_information,
+                'expire' => null,
+            ]));
+        }
+
         return array('status' => 'true', 'message' => 'get data', 'data' => $company, 'code' => 200);
     }
 
@@ -1011,7 +1028,7 @@ class UserController extends Controller
                         'public'
                     );
                 else
-                    Storage::put('public/signatures/' . $fileName, $image_base64);
+                    Storage::put('signatures/' . $fileName, $image_base64);
 
                 // $a = file_put_contents($file, $image_base64);
                 // return response()->json([$a]);

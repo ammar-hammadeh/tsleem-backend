@@ -34,6 +34,7 @@ class User extends Authenticatable implements JWTSubject
     ];
 
 
+
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
@@ -50,15 +51,15 @@ class User extends Authenticatable implements JWTSubject
         }
     }
 
-    public function getSignatureAttribute($val)
+    public function getFullSignatureAttribute($val)
     {
-        if ($val != null) {
+        if ($this->signature != null) {
             if (env('DISK') == 's3')
-                return url(env('AWS_URL') . $val);
+                return url(env('AWS_URL') . $this->signature);
             else
-                return url('storage/' . $val);
+                return url('storage/' . $this->signature);
         } else {
-            return $val;
+            return $this->signature;
         }
     }
 
@@ -78,7 +79,8 @@ class User extends Authenticatable implements JWTSubject
     }
 
     protected $appends = [
-        'status_text'
+        'status_text',
+        'full_signature'
     ];
 
     public function getStatusTextAttribute($val)

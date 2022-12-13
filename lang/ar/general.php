@@ -45,5 +45,14 @@ return [
     'rejectRequest' => 'تم رفض طلبك',
     'category name' => 'اسم التصنيف',
     'actionType' => 'نوع الإجراء',
-    'user' => 'الحساب'
+    'user' => 'الحساب',
+    'addSquareLog' => 'اضافة المربع',
+    'updateSquareLog' => 'تعديل المربع',
+    'deleteSquareLog' => 'حذف المربع',
+    'Active_metric' => 'نشط',
+    'disabled_metric' => 'غير نشط',
+    'payment' => 'مسدد',
+    'unpayment' => 'غير مسدد',
+    'yes' => 'نعم',
+    'no' => 'لا',
 ];

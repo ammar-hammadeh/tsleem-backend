@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class AuditLog extends Model
 {
     use HasFactory;
-    protected $fillable = ['action_id', 'user_id'];
+    protected $fillable = ['action_id', 'user_id', 'note'];
 
     public function getActions()
     {

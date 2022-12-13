@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\AuditLog;
 use App\Models\LogAction;
 use App\Models\User;
@@ -58,18 +59,34 @@ class AuditLogController extends Controller
             $paginate = $request->paginate;
         }
 
-        $query = AuditLog::with('getActions');
+        //     "id": 3,
+        //     "log_name": "default",
+        //     "description": "you have created a record in the table square",
+        //     "subject_type": "App\\Models\\Square",
+        //     "event": "created",
+        //     "subject_id": 152,
+        //     "causer_type": "Modules\\Core\\Entities\\User",
+        //     "causer_id": 1,
+        //     "properties": "{\"attributes\":{\"name\":\"temp5\"}}",
+        //     "batch_uuid": null,
+        //     "created_at": "2022-12-10T21:02:04.000000Z",
 
-        if ($request->start != '')
-            $query->whereDate('created_at', '>=', $request->start);
-        if ($request->end != '')
-            $query->whereDate('created_at', '<=', $request->end);
-        if ($request->action_id != '')
-            $query->where('action_id', $request->action_id);
-        if ($request->user_id != '')
-            $query->where('user_id', $request->user_id);
+        // $query = AuditLog::with('getActions');
+        $query = ActivityLog::join('users', 'users.id', 'activity_log.causer_id')
+            ->select('log_name', 'event', 'name', 'properties', 'activity_log.created_at')->get();
+        // if ($request->start != '')
+        //     $query->whereDate('created_at', '>=', $request->start);
+        // if ($request->end != '')
+        //     $query->whereDate('created_at', '<=', $request->end);
+        // if ($request->action_id != '')
+        //     $query->where('action_id', $request->action_id);
+        // if ($request->user_id != '')
+        //     $query->where('user_id', $request->user_id);
 
         $logs = $query->paginate($paginate);
-        return response()->json(["data" => $logs, 'filters' => $this->filters()], 200);
+        return response()->json([
+            "data" => $logs,
+            // 'filters' => $this->filters()
+        ], 200);
     }
 }

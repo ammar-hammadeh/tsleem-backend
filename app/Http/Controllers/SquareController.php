@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Square;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 class SquareController extends Controller
@@ -94,12 +95,16 @@ class SquareController extends Controller
         DB::beginTransaction();
         try {
             $res = Square::create($request->input());
+            // $user_id = Auth::user()->type_id;
+            // $note = __('general.addSquareLog') . $res->name;
+            // LogHelper::storeLog($user_id, 30, $note);
             DB::commit();
-            if ($res) {
-                return response()->json(["message" => "add new square", "type" => $res], 200);
-            } else {
-                return response()->json(["message" => "an error occurred"], 500);
-            }
+
+            // if ($res) {
+            return response()->json(["message" => "add new square", "type" => $res], 200);
+            // } else {
+            //     return response()->json(["message" => "an error occurred"], 500);
+            // }
         } catch (\Exception $e) {
             return response()->json(["message" => "square updated fail", "error" => $e], 500);
         }
@@ -136,18 +141,18 @@ class SquareController extends Controller
         //     return response()->json(["message" => "id should be integer"], 500);
         // }
         $type = Square::find($id);
-        if ($type == null) {
+        if (!$type)
             return response()->json(["message" => "المربع غير موجود"], 500);
-        }
+
         DB::beginTransaction();
         try {
-            $res = $type->delete();
+            $type->delete();
             DB::commit();
-            if ($res) {
-                return response()->json(["message" => "success delete square", "square" => $type], 200);
-            } else {
-                return response()->json(["message" => "can't delete square",], 500);
-            }
+            // if ($res) {
+            return response()->json(["message" => "success delete square", "square" => $type], 200);
+            // } else {
+            // return response()->json(["message" => "can't delete square",], 500);
+            // }
         } catch (\Exception $e) {
             DB::rollback();
             return response()->json(["message" => "Please check errors", "errors" => $e], 500);

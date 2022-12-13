@@ -192,6 +192,9 @@ class AuthController extends Controller
                 if ($request->type_id != 'admin' && Type::where('id', $user_type)->value('code') != 'admin') {
                     $data['parent_id'] = Auth::user()->id;
                 }
+                if ($request->type_id == 'raft_company' && Type::where('id', $user_type)->value('code') == 'admin') {
+                    $data['name'] = $request->company_name;
+                }
 
                 if (Type::where('id', $user_type)->value('code') == 'admin' && $request->type_id == 'raft_office') {
                     $raft_company = Company::find($request->raft_company_id);
@@ -204,7 +207,8 @@ class AuthController extends Controller
                 }
             }
             // if ($request->type_id == 'service_provider')
-            $data['name'] = $request->owner_name;
+            if ($request->type_id != 'raft_company')
+                $data['name'] = $request->owner_name;
 
             $user = User::create(array_merge(
                 $validator->validated(),
@@ -272,7 +276,7 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'company_name' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor|string',
             'commercial' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor|string',
-            'commercial_expiration' => 'required_if:type_id,consulting_office,design_office,contractor|date',
+            'commercial_expiration' => 'required_if:type_id,consulting_office|date',
             'owner_name' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor',
             'license' => 'required_if:type_id,service_provider',
             'type_id' => 'required',

@@ -86,7 +86,7 @@ class TypeController extends Controller
             DB::commit();
             return response()->json(["message" => "types updated successfully"], 200);
         } catch (\Exception $e) {
-            return response()->json(["message" => "types updated fail", "error" => $e], 500);
+            return response()->json(["message" => "types updated fail", "error" => $e->getMessage()], 500);
         }
     }
 }

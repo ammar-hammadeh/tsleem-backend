@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use Alkoumi\LaravelHijriDate\Hijri;
+use App\Helper\fileManagerHelper;
 use App\Http\Requests\FormTamplateRequest;
+use App\Models\AnswersAttachement;
 use App\Models\AssignCamp;
 use App\Models\Camp;
 use App\Models\Company;
@@ -97,12 +99,12 @@ class FormController extends Controller
                 'getCategory.getQuestion.Answer' => function ($q) use ($request) {
                     return $q->where('assign_camps_id', $request->assign_camps_id)->where('form_id', $request->form_id);
                 },
-                'getCategory.getQuestion.inputs'
+                'getCategory.getQuestion.inputs', 'getCategory.getQuestion.Answer.Attachements'
             ])->where('form_id', $request->form_id)->get();
         else
             $questions = formsQuestions::with(['Questions.Answer' => function ($q) use ($request) {
                 return $q->where('assign_camps_id', $request->assign_camps_id)->where('form_id', $request->form_id);
-            }, 'Questions.inputs'])->where('form_id', $request->form_id)->get();
+            }, 'Questions.inputs', 'Questions.Answer.Attachements'])->where('form_id', $request->form_id)->orderBy('id')->get();
         // $question = formsQuestions::with(['Questions.Answer' => function ($q) use ($request) {
         //     return $q->where('assign_camps_id', $request->assign_camps_id)->where('form_id', $request->form_id);
         // }, 'Questions.inputs'])->where('form_id', $request->form_id)->get();
@@ -188,12 +190,19 @@ class FormController extends Controller
             }
 
             $isCategorized = $request->isCategorized;
-
+            $category_ids = $request->category_ids;
+            $question_ids = $request->question_ids;
             if ($isCategorized) {
-                $categories = QuestionCategory::find($request->category_ids);
+                $categories = QuestionCategory::find($category_ids)
+                    ->sortBy(function ($el) use ($category_ids) {
+                        return array_search($el->getKey(), $category_ids);
+                    });
                 $form->Categories()->sync($categories);
             } else {
-                $questions = Question::find($request->question_ids);
+                $questions = Question::find($request->question_ids)
+                    ->sortBy(function ($el) use ($question_ids) {
+                        return array_search($el->getKey(), $question_ids);
+                    });
                 $form->Questions()->sync($questions);
             }
 
@@ -272,21 +281,6 @@ class FormController extends Controller
         }
     }
 
-    public function FormAnswer(Request $request, $id)
-    {
-        $answers = $request->answer;
-
-        for ($i = 0; $i < count($answers); $i++)
-            TasleemFormAnswers::create([
-                'user_id' => Auth::user()->id,
-                'assign_camps_id' => $request->assign_camps_id[$i],
-                'form_id' => $id,
-                'question_id' => $request->question[$i],
-                'answer' => $request->answer[$i],
-            ]);
-
-        return response()->json(['message' => 'submitted successfully']);
-    }
 
     public function SignForm(Request $request)
     {
@@ -453,7 +447,6 @@ class FormController extends Controller
         $Acamps = AssignCamp::find($request->assign_camps_id);
         $compType = Company::find($Acamps->receiver_company_id);
         $uType = Type::find($compType->type_id);
-        $userByType = User::where('type_id', $uType->id)->get();
         $userIDByType = User::where('type_id', $uType->id)->pluck('id')->toArray();
         // $questionCategories = QuestionCategory::get();
         $Fsigns = FormSign::where('assign_camps_id', $request->assign_camps_id)->where('form_id', $request->form_id)->whereIn('user_id', $userIDByType)->get();
@@ -477,19 +470,23 @@ class FormController extends Controller
                 'getCategory.getQuestion.Answer' => function ($q) use ($request) {
                     return $q->where('assign_camps_id', $request->assign_camps_id)->where('form_id', $request->form_id);
                 },
-                'getCategory.getQuestion.inputs'
+                'getCategory.getQuestion.inputs', 'getCategory.getQuestion.Answer.Attachements'
             ])->where('form_id', $request->form_id)->get();
         else
             $questions = formsQuestions::with(['Questions.Answer' => function ($q) use ($request) {
                 return $q->where('assign_camps_id', $request->assign_camps_id)->where('form_id', $request->form_id);
-            }, 'Questions.inputs'])->where('form_id', $request->form_id)->get();
+            }, 'Questions.inputs', 'Questions.Answer.Attachements'])
+                ->where('form_id', $request->form_id)
+                ->orderBy('id', 'desc')->get();
 
         $signature = FormSign::join('users', 'users.id', 'forms_signs.user_id')
+            ->leftjoin('model_has_roles','users.id','model_has_roles.model_id')
+            ->leftjoin('roles','model_has_roles.role_id','roles.id')
             ->join('types', 'types.id', 'forms_signs.type_id')
             ->select('users.name as username', 'types.name as type_name', 'sign')
             ->where('forms_signs.form_id', $request->form_id)
             ->where('forms_signs.assign_camps_id', $request->assign_camps_id)
-            ->select('users.id as user_id', 'users.name as username', 'types.name as type_name', 'types.name_in_form as name_in_form', 'sign')
+            ->select('users.id as user_id', 'users.name as username', 'types.name as type_name', DB::raw("CONCAT(types.name_in_form,' (',roles.name,') ') AS name_in_form"), 'sign','roles.name as role_name')
             ->get();
 
         $sign_type = Type::join('form_signers', 'types.id', 'form_signers.type_id')->where('form_signers.form_id', $request->form_id)->pluck('types.id')->toArray();
@@ -502,11 +499,14 @@ class FormController extends Controller
             ->pluck('types.id')->toArray();
 
         if (Auth::user()->type_id == Type::where('code', 'admin')->value('id')) {
-            $type_need_sign = Type::join('form_signers', 'types.id', 'form_signers.type_id')->with('users')->where('form_signers.form_id', $request->form_id)
+            $userByType = User::where('type_id', $uType->id)->get();
+
+            $type_need_sign = Type::join('form_signers', 'types.id', 'form_signers.type_id')->with('users',function ($q){$q->where('users.status','active');})->where('form_signers.form_id', $request->form_id)
                 ->whereNotIn('types.id', $signatured_type)->select('types.id', 'types.name as type_name', 'types.name_in_form as name_in_form')
                 ->get();
         } else {
-            $type_need_sign = Type::join('form_signers', 'types.id', 'form_signers.type_id')->with('users')->where('form_signers.form_id', $request->form_id)
+            $userByType = User::where('id', Auth::user()->id)->get();
+            $type_need_sign = Type::join('form_signers', 'types.id', 'form_signers.type_id')->with('users',function ($q){$q->where('users.status','active');})->where('form_signers.form_id', $request->form_id)
                 ->whereNotIn('types.id', $signatured_type)->select('types.id', 'types.name as type_name', 'types.name_in_form as name_in_form')
                 ->where('types.id', Auth::user()->type_id)
                 ->get();
@@ -529,6 +529,8 @@ class FormController extends Controller
         $output = str_replace('==month==', Hijri::Date('m'), $output);
         $output = str_replace('==year==', Hijri::Date('Y'), $output);
         $output = str_replace('==date==', Hijri::Date('Y/m/d'), $output);
+        $output = str_replace('==company==', $compType->name, $output);
+        $output = str_replace('==license==', $compType->license, $output);
         // return response()->json([$form->body]);
 
         $users =  Type::join('form_signers', 'types.id', 'form_signers.type_id')->with('users')->get();
@@ -549,32 +551,9 @@ class FormController extends Controller
             return response()->json(['message' => 'لايوجد بيانات مطابقة'], 404);
     }
 
+
     public function FormUpdateAnswer(Request $request)
     {
-        //     $questions_by_form = formsQuestions::join('questions', 'questions.id', 'form_questions.question_id')
-        //     ->where('form_id',$request->form_id)->pluck('questions.id')->toArray();
-
-        //     $answers = TasleemFormAnswers::where('assign_camps_id',$request->assign_camps_id)->where('form_id',$request->form_id)->whereIn('question_id')
-        //     // ->pluck('question_id')
-        //     ->toArray();
-
-        //     $questions = $request->questions;
-        //     foreach($questions_by_form as $id){
-
-        //         if(in_array($id,$questions)){
-        //             $formAnswer = TasleemFormAnswers::where('assign_camps_id',$request->assign_camps_id)->where('form_id',$request->form_id)->where('question_id',$id)->first();
-
-        //             $formAnswer->update([
-        //                 'answer'=>$request->answer
-        //             ]);
-        //         }
-
-
-        //     }
-
-        // $questions_by_form = formsQuestions::join('questions', 'questions.id', 'form_questions.question_id')
-        //     ->where('form_id', $request->form_id)->pluck('questions.id')->toArray();
-
         $form = FormTamplate::find($request->form_id);
 
         $answers = $request->answer;
@@ -589,20 +568,44 @@ class FormController extends Controller
                             if ($answers[$i][$y] == 'null') {
                                 $answer = null;
                             } else $answer = $answers[$i][$y];
+
+                            if ($request->note[$i][$y] == 'null') {
+                                $note = null;
+                            } else $note = $request->note[$i][$y];
+
                             $tsleem_answer->update([
-                                'answer' => $answer
+                                'answer' => $answer,
+                                'note' => $note
                             ]);
                         }
                     } else {
                         if ($answers[$i][$y] == 'null') $answer = null;
                         else $answer = $answers[$i][$y];
-                        TasleemFormAnswers::create([
+
+                        if ($request->note[$i][$y] == 'null') $note = null;
+                        else $note = $request->note[$i][$y];
+
+                        $tsleem_answer = TasleemFormAnswers::create([
                             'user_id' => Auth::user()->id,
                             'assign_camps_id' => $request->assign_camps_id,
                             'form_id' => $request->form_id,
                             'question_id' => $request->questions[$i][$y],
                             'answer' => $answer,
+                            'note' => $note
                         ]);
+                        $q = Question::find($tsleem_answer->question_id);
+                        if ($q != null) {
+                            if ($q->attachement == 1) {
+                                foreach ($request->answer_attach as $attach)
+                                    if ($request->hasFile($attach)) {
+                                        $att = fileManagerHelper::storefile($answer->id, $request->ownerid_file, 'answers');
+                                        AnswersAttachement::create([
+                                            'path' => $att,
+                                            'answer_id' => $tsleem_answer->id,
+                                        ]);
+                                    }
+                            }
+                        }
                     }
                 }
             }
@@ -626,19 +629,42 @@ class FormController extends Controller
                         if ($answers[$i] == 'null') {
                             $answer = null;
                         } else $answer = $answers[$i];
+
+                        if ($request->note[$i] == 'null') {
+                            $note = null;
+                        } else $note = $request->note[$i];
+
                         $tsleem_answer->update([
-                            'answer' => $answer
+                            'answer' => $answer,
+                            'note' => $note
                         ]);
+                        $q = Question::find($tsleem_answer->question_id);
+                        if ($q != null) {
+                            if ($q->attachement == 1) {
+                                foreach ($request->answer_attach as $attach)
+                                    if ($request->hasFile($attach)) {
+                                        $att = fileManagerHelper::storefile($answer->id, $request->ownerid_file, 'answers');
+                                        AnswersAttachement::create([
+                                            'path' => $att,
+                                            'answer_id' => $tsleem_answer->id,
+                                        ]);
+                                    }
+                            }
+                        }
                     }
                 } else {
                     if ($answers[$i] == 'null') $answer = null;
                     else $answer = $answers[$i];
-                    TasleemFormAnswers::create([
+                    if ($request->note[$i] == 'null') $note = null;
+                    else $note = $request->note[$i];
+
+                    $tasleem_answer = TasleemFormAnswers::create([
                         'user_id' => Auth::user()->id,
                         'assign_camps_id' => $request->assign_camps_id,
                         'form_id' => $request->form_id,
                         'question_id' => $request->questions[$i],
                         'answer' => $answer,
+                        'note' => $note
                     ]);
                 }
             }
@@ -652,7 +678,57 @@ class FormController extends Controller
                 ]);
             }
         }
-        // return response()->json(['a'=> $tasleem_from_answer,'b'=>$form_tamplate]);
         return response()->json(['message' => 'تم الحفظ بنجاح'], 200);
+    }
+
+    public function UploadAnswerAttach(Request $request)
+    {
+        DB::beginTransaction();
+        try {
+            if ($request->id == "null") {
+                $answer = TasleemFormAnswers::create([
+                    'user_id' => Auth::user()->id,
+                    'assign_camps_id' => $request->assign_camps_id,
+                    'form_id' => $request->form_id,
+                    'question_id' => $request->question_id,
+                ]);
+            } else {
+                $answer = TasleemFormAnswers::find($request->id);
+                if (!$answer) {
+                    return response()->json(["message" => "not found"], 500);
+                }
+            }
+            $q = Question::find($request->question_id);
+            if ($q != null) {
+                $file_array = array();
+                foreach ($request->answer_attach as $attach) {
+                    $att = fileManagerHelper::storefile($answer->id, $attach, 'answers');
+                    $file = AnswersAttachement::create([
+                        'path' => $att,
+                        'answer_id' => $answer->id,
+                    ]);
+                    array_push($file_array, $file);
+                }
+            } else
+                return response()->json(["message" => "not found"], 500);
+            DB::commit();
+            return response()->json(["message" => "uploded successfully", 'files' => $file_array, 'id' => $answer->id], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(["message" => "fail", "error" => $e->getMessage()], 500);
+        }
+    }
+
+    public function DeleteAnswerAttach($id)
+    {
+        $answerAttach = AnswersAttachement::find($id);
+        if ($answerAttach != null) {
+            if (Storage::disk(env('DISK'))->exists($answerAttach->path)) {
+                Storage::delete($answerAttach->path);
+            }
+            $answerAttach->delete();
+            return response()->json(['message' => 'attachement deleted succesfully'], 200);
+        } else
+            return response()->json(['message' => 'data not found'], 500);
     }
 }

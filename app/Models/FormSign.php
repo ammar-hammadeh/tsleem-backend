@@ -10,16 +10,19 @@ class FormSign extends Model
     use HasFactory;
     protected $table = 'forms_signs';
     protected $guarded = [];
+    protected $appends = [
+        'full_path_sign'
+    ];
 
-    public function getSignAttribute($val)
+    public function getFullPathSignAttribute($val)
     {
-        if ($val != null) {
+        if ($this->sign != null) {
             if (env('DISK') == 's3')
-                return url(env('AWS_URL') . $val);
+                return url(env('AWS_URL') . $this->sign);
             else
-                return url('storage/' . $val);
+                return url('storage/' . $this->sign);
         } else {
-            return $val;
+            return $this->sign;
         }
     }
 }

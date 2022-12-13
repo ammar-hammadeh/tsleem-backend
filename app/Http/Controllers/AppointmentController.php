@@ -33,23 +33,34 @@ class AppointmentController extends Controller
                 'type' => 'date',
                 'items' => ''
             ],
-            [
-                'name' => 'receiver_company_id',
-                'value' => '',
-                'label' => __('general.CR Number'),
-                'type' => 'auto-complete',
-                'items' => Company::whereHas('Type', function ($query) {
-                    $query->whereIn('code', ['raft_company', 'service_provider', 'raft_office']);
-                })->get(),
-                'itemText' => 'name',
-                'itemValue' => 'id'
-            ],
+            // [
+            //     'name' => 'receiver_company_id',
+            //     'value' => '',
+            //     'label' => __('general.CR Number'),
+            //     'type' => 'auto-complete',
+            //     'items' => Company::whereHas('Type', function ($query) {
+            //         $query->whereIn('code', ['raft_company', 'service_provider', 'raft_office']);
+            //     })->get(),
+            //     'itemText' => 'name',
+            //     'itemValue' => 'id'
+            // ],
             [
                 'name' => 'square',
                 'value' => '',
                 'label' => __('general.Square'),
                 'type' => 'auto-complete',
                 'items' => Square::get(),
+                'itemText' => 'name',
+                'itemValue' => 'id'
+            ],
+            [
+                'name' => 'company',
+                'value' => '',
+                'label' => __('general.Company'),
+                'type' => 'auto-complete',
+                'items' => Company::whereHas('Type', function ($query) {
+                    $query->whereIn('code', ['raft_company', 'service_provider', 'raft_office']);
+                })->get(),
                 'itemText' => 'name',
                 'itemValue' => 'id'
             ],
@@ -83,6 +94,32 @@ class AppointmentController extends Controller
     }
 
 
+    public function filter_spacific_appointment()
+    {
+        $filters = [
+            [
+                'name' => 'type_id',
+                'value' => '',
+                'label' => __('general.user type'),
+                'type' => 'select',
+                'items' => Type::whereNull('deleted_at')->get(),
+                'itemText' => 'name',
+                'itemValue' => 'id'
+            ],
+            [
+                'name' => 'company',
+                'value' => '',
+                'label' => __('general.Company'),
+                'type' => 'auto-complete',
+                'items' => Company::whereHas('Type', function ($query) {
+                    $query->whereIn('code', ['raft_company', 'service_provider', 'raft_office']);
+                })->get(),
+                'itemText' => 'name',
+                'itemValue' => 'id'
+            ],
+        ];
+        return $filters;
+    }
 
     public function index(Request $request)
     {
@@ -93,6 +130,7 @@ class AppointmentController extends Controller
             $paginate = env('PAGINATE');
 
         $IDAssignation =  AssignCamp::join('companies', 'companies.id', 'assign_camps.receiver_company_id')
+            ->join('types', 'types.id', 'companies.type_id')
             ->join('camps', 'camps.id', 'assign_camps.camp_id')
             ->join('square', 'square.id', 'assign_camps.square_id')
             ->select(
@@ -105,7 +143,7 @@ class AppointmentController extends Controller
                 'camps.id as camp_id',
                 'camps.name as camp_name',
                 'companies.name as company_name',
-                'contract_status'
+                'contract_status',
             )
             ->where('camps.status', 'ready')
             ->whereNotIn('assign_camps.status', ['appointment', 'deliverd', 'answered']);
@@ -120,14 +158,18 @@ class AppointmentController extends Controller
         if ($request->receiver_company_id != '')
             $IDAssignation->where('receiver_company_id', $request->receiver_company_id);
         if ($request->square != '')
-            $IDAssignation->where('square_id', $request->square_id);
+            $IDAssignation->where('square_id', $request->square);
         if ($request->camp != '')
-            $IDAssignation->where('camp_id', $request->camp_id);
+            $IDAssignation->where('camps.id', $request->camp);
+        if ($request->type_id != '')
+            $IDAssignation->where('types.id', $request->type_id);
+        if ($request->company != '')
+            $IDAssignation->where('companies.id', $request->company);
 
         //check user type
         if (Auth::guard('api')->check()) {
             $userType = Type::where('id', Auth::user()->type_id)->value('code');
-            if ($userType != 'admin' && $userType != 'raft_company') {
+            if ($userType != 'admin' && $userType != 'raft_company'  && $userType != 'sharer' && $userType != 'consulting_office' && $userType != 'contractor') {
                 $IDAssignation->where('receiver_company_id', Auth::user()->company_id);
             } elseif ($userType == 'raft_company') {
                 $IDAssignation->where('assigner_company_id', Auth::user()->company_id);
@@ -136,7 +178,7 @@ class AppointmentController extends Controller
 
         $result = $IDAssignation->paginate($paginate);
 
-        return response()->json(['message' => 'assignations got successfully', 'filters' => $this->filters(), 'data' => $result]);
+        return response()->json(['message' => 'assignations got successfully', 'filters' => $this->filter_spacific_appointment(), 'data' => $result]);
     }
 
 
@@ -164,6 +206,7 @@ class AppointmentController extends Controller
                 appointment,
                 appointment_status,
                 companies.name as company_name,
+                companies.id as company_id,
                 date(appointment) as appointment_date'
             );
 
@@ -179,12 +222,17 @@ class AppointmentController extends Controller
         if ($request->receiver_company_id != '')
             $IDAppointments->where('receiver_company_id', $request->receiver_company_id);
         if ($request->square != '')
-            $IDAppointments->where('square.id', $request->square_id);
+            $IDAppointments->where('square.id', $request->square);
         if ($request->camp != '')
-            $IDAppointments->where('camp_id', $request->camp_id);
+            $IDAppointments->where('camps.id', $request->camp);
+        if ($request->company != '')
+            $IDAppointments->where('companies.id', $request->company);
 
         if ($request->status) {
             $IDAppointments->where('assign_camps.status', $request->status);
+
+            if ($request->start != '')
+                $IDAppointments->whereDate('appointment', '>=', $request->start);
         }
         // }else{
         //     $IDAppointments->where('assign_camps.status','!=', 'answered')->where('assign_camps.status','!=', 'deliverd');
@@ -193,7 +241,7 @@ class AppointmentController extends Controller
         //check user type
         if (Auth::guard('api')->check()) {
             $userType = Type::where('id', Auth::user()->type_id)->value('code');
-            if ($userType != 'admin' && $userType != 'raft_company' && $userType != 'kdana') {
+            if ($userType != 'admin' && $userType != 'raft_company' && $userType != 'kdana' && $userType != 'sharer' && $userType != 'consulting_office' && $userType != 'contractor') {
                 $IDAppointments->where('receiver_company_id', Auth::user()->company_id);
             } elseif ($userType == 'raft_company') {
                 $IDAppointments->where('assigner_company_id', Auth::user()->company_id);
