@@ -480,13 +480,13 @@ class FormController extends Controller
                 ->orderBy('id', 'desc')->get();
 
         $signature = FormSign::join('users', 'users.id', 'forms_signs.user_id')
-            ->leftjoin('model_has_roles','users.id','model_has_roles.model_id')
-            ->leftjoin('roles','model_has_roles.role_id','roles.id')
+            ->leftjoin('model_has_roles', 'users.id', 'model_has_roles.model_id')
+            ->leftjoin('roles', 'model_has_roles.role_id', 'roles.id')
             ->join('types', 'types.id', 'forms_signs.type_id')
             ->select('users.name as username', 'types.name as type_name', 'sign')
             ->where('forms_signs.form_id', $request->form_id)
             ->where('forms_signs.assign_camps_id', $request->assign_camps_id)
-            ->select('users.id as user_id', 'users.name as username', 'types.name as type_name', DB::raw("CONCAT(types.name_in_form,' (',roles.name,') ') AS name_in_form"), 'sign','roles.name as role_name')
+            ->select('users.id as user_id', 'users.name as username', 'types.name as type_name', DB::raw("CONCAT(types.name_in_form,' (',roles.name,') ') AS name_in_form"), 'sign', 'roles.name as role_name')
             ->get();
 
         $sign_type = Type::join('form_signers', 'types.id', 'form_signers.type_id')->where('form_signers.form_id', $request->form_id)->pluck('types.id')->toArray();
@@ -501,26 +501,31 @@ class FormController extends Controller
         if (Auth::user()->type_id == Type::where('code', 'admin')->value('id')) {
             $userByType = User::where('type_id', $uType->id)->get();
 
-            $type_need_sign = Type::join('form_signers', 'types.id', 'form_signers.type_id')->with('users',function ($q){$q->where('users.status','active');})->where('form_signers.form_id', $request->form_id)
+            $type_need_sign = Type::join('form_signers', 'types.id', 'form_signers.type_id')->with('users', function ($q) {
+                $q->where('users.status', 'active');
+            })->where('form_signers.form_id', $request->form_id)
                 ->whereNotIn('types.id', $signatured_type)->select('types.id', 'types.name as type_name', 'types.name_in_form as name_in_form')
                 ->get();
+            if (count($Fsigns) == 0) {
+                // return response()->json($Fsigns);
+                $receiver_sign = [
+                    'id' => $uType->id,
+                    'type_name' => $uType->name,
+                    'users' => $userByType,
+                    'name_in_form' => $uType->name_in_form
+                ];
+                $type_need_sign->push($receiver_sign);
+            }
         } else {
             $userByType = User::where('id', Auth::user()->id)->get();
-            $type_need_sign = Type::join('form_signers', 'types.id', 'form_signers.type_id')->with('users',function ($q){$q->where('users.status','active');})->where('form_signers.form_id', $request->form_id)
+            $type_need_sign = Type::join('form_signers', 'types.id', 'form_signers.type_id')->with('users', function ($q) {
+                $q->where('users.status', 'active');
+            })->where('form_signers.form_id', $request->form_id)
                 ->whereNotIn('types.id', $signatured_type)->select('types.id', 'types.name as type_name', 'types.name_in_form as name_in_form')
                 ->where('types.id', Auth::user()->type_id)
                 ->get();
         }
-        if (count($Fsigns) == 0) {
-            // return response()->json($Fsigns);
-            $receiver_sign = [
-                'id' => $uType->id,
-                'type_name' => $uType->name,
-                'users' => $userByType,
-                'name_in_form' => $uType->name_in_form
-            ];
-            $type_need_sign->push($receiver_sign);
-        }
+
         $camp = Camp::find($Acamps->camp_id);
         $square = Square::find($Acamps->square_id);
         $output = str_replace('==camp==', $camp->name, $form->body);
@@ -617,6 +622,14 @@ class FormController extends Controller
                 $assign_camp->update([
                     'status' => 'answered'
                 ]);
+                $signers = FormSigner::where('form_id', $request->form_id)->pluck('type_id')->toArray();
+                $notificationMessage = "يرجى توقيع محضر التسليم";
+                $usersByType = User::whereIn('type_id', $signers->type_id)->get();
+                foreach ($usersByType as $userByType) {
+                    $link = "/appointments/$request->assign_camps_id/form";
+                    (new NotificationController)->addNotification($userByType->id, $notificationMessage, $link);
+                }
+        
             }
         } else {
 
@@ -676,6 +689,14 @@ class FormController extends Controller
                 $assign_camp->update([
                     'status' => 'answered'
                 ]);
+                $signers = FormSigner::where('form_id', $request->form_id)->pluck('type_id')->toArray();
+                $notificationMessage = "يرجى توقيع محضر التسليم";
+                $usersByType = User::whereIn('type_id', $signers->type_id)->get();
+                foreach ($usersByType as $userByType) {
+                    $link = "/appointments/$request->assign_camps_id/form";
+                    (new NotificationController)->addNotification($userByType->id, $notificationMessage, $link);
+                }
+        
             }
         }
         return response()->json(['message' => 'تم الحفظ بنجاح'], 200);

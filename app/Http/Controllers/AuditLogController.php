@@ -29,13 +29,11 @@ class AuditLogController extends Controller
                 'items' => ''
             ],
             [
-                'name' => 'action_id',
+                'name' => 'log_name',
                 'value' => '',
-                'label' => __('general.actionType'),
-                'type' => 'auto-complete',
-                'items' => LogAction::get(),
-                'itemText' => 'name',
-                'itemValue' => 'id'
+                'label' => __('general.Name'),
+                'type' => 'text',
+                'items' => ''
             ],
             [
                 'name' => 'user_id',
@@ -73,20 +71,21 @@ class AuditLogController extends Controller
 
         // $query = AuditLog::with('getActions');
         $query = ActivityLog::join('users', 'users.id', 'activity_log.causer_id')
-            ->select('log_name', 'event', 'name', 'properties', 'activity_log.created_at')->get();
-        // if ($request->start != '')
-        //     $query->whereDate('created_at', '>=', $request->start);
-        // if ($request->end != '')
-        //     $query->whereDate('created_at', '<=', $request->end);
-        // if ($request->action_id != '')
-        //     $query->where('action_id', $request->action_id);
-        // if ($request->user_id != '')
-        //     $query->where('user_id', $request->user_id);
+            ->select('log_name', 'event', 'name', 'properties', 'activity_log.created_at');
+
+        if ($request->start != '')
+            $query->whereDate('created_at', '>=', $request->start);
+        if ($request->end != '')
+            $query->whereDate('created_at', '<=', $request->end);
+        if ($request->log_name != '')
+            $query->where('log_name', 'like', '%' . $request->log_name . '%');
+        if ($request->user_id != '')
+            $query->where('causer_id', $request->user_id);
 
         $logs = $query->paginate($paginate);
         return response()->json([
             "data" => $logs,
-            // 'filters' => $this->filters()
+            'filters' => $this->filters()
         ], 200);
     }
 }

@@ -55,4 +55,7 @@ return [
     'unpayment' => 'غير مسدد',
     'yes' => 'نعم',
     'no' => 'لا',
+    'updated' => 'تعديل',
+    'created' => 'انشاء',
+    'deleted' => 'حذف'
 ];

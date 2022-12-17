@@ -276,7 +276,7 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'company_name' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor|string',
             'commercial' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor|string',
-            'commercial_expiration' => 'required_if:type_id,consulting_office|date',
+            // 'commercial_expiration' => 'required_if:type_id,consulting_office|date',
             'owner_name' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor',
             'license' => 'required_if:type_id,service_provider',
             'type_id' => 'required',

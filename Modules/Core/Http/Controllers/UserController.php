@@ -328,8 +328,8 @@ class UserController extends Controller
                 $data = array('status' => $request->status);
                 if ($request->status == "active")
                     $notificationMessage = __('general.activeRequest');
-                // elseif ($request->status == "disabled")
-                //     $notificationMessage = __('general.disabledRequest');
+                elseif ($request->status == "disabled")
+                    $notificationMessage = __('general.disabledRequest');
 
                 if ($request->has('reject_reason')) {
                     $notificationMessage = __('general.rejectRequest');
@@ -510,7 +510,7 @@ class UserController extends Controller
         $validator = Validator::make($request->all(), [
             'company_name' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor|string|between:2,100',
             'commercial' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor|string',
-            'commercial_expiration' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor|date',
+            // 'commercial_expiration' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor|date',
             'owner_name' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor',
             'license' => 'required_if:type_id,service_provider,raft_company',
             // 'type_id' => 'required'
@@ -525,7 +525,7 @@ class UserController extends Controller
             'name' =>  $request->company_name,
             'commercial' => $request->commercial,
             'license' => $request->license,
-            'commercial_expiration' => $request->commercial_expiration,
+            // 'commercial_expiration' => $request->commercial_expiration,
             'owner_id' => $user->id,
             // 'type_id' => $type,
             'owner_name' => $request->owner_name,
@@ -1149,21 +1149,22 @@ class UserController extends Controller
             DB::beginTransaction();
 
             $userCompany = Company::where('owner_id', $id)->first();
-            Company::where('owner_id', $id)->delete();
 
             $userChildren = User::where('parent_id', $id)
                 ->orWhere('id', $id)->get();
             User::where('parent_id', $id)->delete();
             User::where('id', $id)->delete();
 
-            $companyAttachments = CompanyAttachement::where('company_id', $userCompany->id)->get();
-            foreach ($companyAttachments as $attachment) {
-                if (Storage::disk('company')->exists($attachment->company_id . '/' . $attachment->path)) {
-                    Storage::delete('public/company/' . $attachment->path);
-                    $attachment->delete();
+            if ($user->company_id != null) {
+                $companyAttachments = CompanyAttachement::where('company_id', $userCompany->id)->get();
+                foreach ($companyAttachments as $attachment) {
+                    if (Storage::disk('company')->exists($attachment->company_id . '/' . $attachment->path)) {
+                        Storage::delete('public/company/' . $attachment->path);
+                        $attachment->delete();
+                    }
                 }
+                Company::where('owner_id', $id)->delete();
             }
-
             foreach ($userChildren as $attachment) {
                 if (Storage::disk('users')->exists($attachment->user_id . '/' . $attachment->path)) {
                     Storage::delete('public/users/' . $attachment->path);

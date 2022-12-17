@@ -34,7 +34,7 @@ class CompanyController extends Controller
         $validator = Validator::make($request->all(), [
             'company_name' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor|string',
             'commercial' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor|string',
-            'commercial_expire' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor|date',
+            // 'commercial_expire' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor|date',
             'owner_name' => 'required_if:type_id,service_provider,consulting_office,design_office,contractor',
             'license' => 'required_if:type_id,service_provider,raft_company',
         ]);

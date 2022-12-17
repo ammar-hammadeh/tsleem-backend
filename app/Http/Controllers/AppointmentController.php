@@ -282,11 +282,11 @@ class AppointmentController extends Controller
     public function update($id, AppointmentRequest $request)
     {
         $appointment = UserAppointment::find($id);
-        if (!$appointment)
+        if ($appointment == null)
             return response()->json(['message' => 'please check appointment id and try again'], 500);
 
         $assignation = AssignCamp::find($request->assign_camp_id);
-        if (!$assignation)
+        if ($assignation == null)
             return response()->json(['message' => 'please check assignation id and try again'], 500);
 
         $appointment->update(

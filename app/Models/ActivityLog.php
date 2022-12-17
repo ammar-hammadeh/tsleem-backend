@@ -12,4 +12,12 @@ class ActivityLog extends Model
     protected $casts = [
         'properties' => 'collection',
     ];
+    protected $appends = [
+        'event_text'
+    ];
+
+    public function getEventTextAttribute($val)
+    {
+        return __('general.' . $this->event);
+    }
 }
