@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Helper\fileManagerHelper;
-use App\Models\AssignCamp;
-use App\Models\Company;
-use App\Models\CompanyAttachement;
 use App\Models\Type;
+use App\Models\Company;
+use App\Helper\LogHelper;
+use App\Models\AssignCamp;
 use Illuminate\Http\Request;
+use App\Helper\fileManagerHelper;
+use App\Models\CompanyAttachement;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -55,6 +56,39 @@ class CompanyController extends Controller
             'owner_hardcopyid' => $request->owner_hardcopyid,
 
         ]);
+
+        // log section
+        $user_id = Auth::user()->id;;
+        $old_value = [
+            'name' => $request->name,
+            'commercial' => $request->commercial,
+            // 'license' => $prefix != null ? $prefix . '-' . $request->license : $request->license,
+            'owner name' => $request->owner_name,
+            // 'kroky' => $kroky == null ? $request->kroky : $kroky,
+            'Owner identification number' => $request->owner_hardcopyid,
+            // 'prefix' => $prefix == null ? $request->prefix : $prefix,
+        ];
+        $new_value = [
+            'name' => $request->name,
+            'commercial' => $request->commercial,
+            // 'license' => $prefix != null ? $prefix . '-' . $request->license : $request->license,
+            'owner name' => $request->owner_name,
+            // 'kroky' => $kroky == null ? $request->kroky : $kroky,
+            'Owner identification number' => $request->owner_hardcopyid,
+            // 'prefix' => $prefix == null ? $request->prefix : $prefix,
+        ];
+        $module = 'users';
+        $method_id = 2;
+        $message = __('logTr.editProfile');
+
+        LogHelper::storeLog(
+            $user_id,
+            json_decode(json_encode($old_value)),
+            json_decode(json_encode($new_value)),
+            $module,
+            $method_id,
+            $message,
+        );
         $data['company_id'] = $company->id;
         $data['type'] = '0';
 

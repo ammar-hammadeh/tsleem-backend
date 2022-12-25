@@ -2,18 +2,37 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Spatie\Activitylog\LogOptions;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Company extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
     protected $table = 'companies';
     protected $guarded = [];
     protected $appends = [
         'files_counter'
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'type_id',
+                'owner_id',
+                'parent_id',
+                'name',
+                'commercial',
+                'license',
+                'owner_name',
+                'owner_hardcopyid',
+                'commercial_expiration',
+                'deleted_at',
+            ])->useLogName('companies');
+    }
+
 
     public function getFilesCounterAttribute($val)
     {

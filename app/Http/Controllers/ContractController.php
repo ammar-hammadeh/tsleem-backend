@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendEmailJob;
 use App\Models\Camp;
 use App\Models\Type;
 use App\Models\Square;
@@ -13,6 +14,7 @@ use Illuminate\Http\Request;
 use Modules\Core\Entities\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Modules\Core\Mail\SendEmail;
 
 class ContractController extends Controller
 {
@@ -150,6 +152,16 @@ class ContractController extends Controller
                 'contract_status' => 'unsigned'
             ]);
         }
+        $user_id = Company::where('id',$contract->company_id)->value('owner_id');
+        $user = User::find($user_id);
+        sendSMS($user->phone, 'تم تثبيت المخيم الخاص بكم , برجاء مراجعة البوابة لإعتماد التثبيت');
+        $Emaildata = array(
+            "name" => $user->name,
+            "body" => 'تم تثبيت المخيم الخاص بكم , برجاء مراجعة البوابة لإعتماد التثبيت',
+            "subject" => "تثبيت المخيم" . env('APP_NAME')
+        );
+        dispatch(new SendEmailJob($user->email, new SendEmail($Emaildata, "Notification")))->onConnection('database');
+        
         return response()->json(['contract_status' => 'unsigned'], 200);
     }
     public function view($id)
@@ -196,6 +208,7 @@ class ContractController extends Controller
     public function SignContract($id)
     {
         $contract = Contract::find($id);
+        $user = User::find($contract->user_id);
         $type = Type::find(Auth::user()->type_id);
         if ($type->code == "kdana")
             $contract->update([
@@ -222,6 +235,14 @@ class ContractController extends Controller
                         'contract_status' => 'signed'
                     ]);
                 }
+                sendSMS($user->phone, 'تم اعتماد التثبيت بنجاح');
+                $Emaildata = array(
+                    "name" => $user->name,
+                    "body" => 'تم اعتماد التثبيت بنجاح',
+                    "subject" => "اعتماد التثبيت" . env('APP_NAME')
+                );
+                dispatch(new SendEmailJob($user->email, new SendEmail($Emaildata, "Notification")))->onConnection('database');
+        
                 DB::commit();
             } catch (\Exception $e) {
                 DB::rollBack();

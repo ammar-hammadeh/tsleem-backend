@@ -3,11 +3,13 @@
 namespace Modules\Core\Http\Controllers;
 
 use Exception;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use App\Helper\LogHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Validator;
 use Modules\Core\Entities\Permission as EntitiesPermission;
@@ -32,6 +34,24 @@ class RoleController extends Controller
                 DB::commit();
                 return response()->json(["message" => "Role created successfully", "data" => $role], 200);
             }
+            // log section
+            $user_id = Auth::user()->id;;
+            $old_value = null;
+            $new_value = [
+                'role' => $request->name
+            ];
+            $module = 'roles';
+            $method_id = 1;
+            $message = __('logTr.createRole');
+
+            LogHelper::storeLog(
+                $user_id,
+                json_decode(json_encode($old_value)),
+                json_decode(json_encode($new_value)),
+                $module,
+                $method_id,
+                $message,
+            );
         } catch (Exception $e) {
             DB::rollback();
             return response()->json(["message" => "Please check errors", "errors" => $e], 500);
@@ -67,9 +87,33 @@ class RoleController extends Controller
 
         if ($role->update(['name' => $request->name])) {
             $role->syncPermissions($request->permissions);
+
+
+            // log section
+            $user_id = Auth::user()->id;;
+            $old_value = [
+                'role' => $role->name
+            ];
+            $new_value = [
+                'role' => $request->name
+            ];
+            $module = 'roles';
+            $method_id = 2;
+            $message = __('logTr.UpdateRole');
+
+            LogHelper::storeLog(
+                $user_id,
+                json_decode(json_encode($old_value)),
+                json_decode(json_encode($new_value)),
+                $module,
+                $method_id,
+                $message,
+            );
             return response()->json(["message" => "Role updated successfully", "data" => $role], 200);
         } else
             return response()->json(["message" => "Please Check errors"], 500);
+
+
         //        }
         //        else if ($request->isMethod('get')) {
         //            $permissions = Permission::getPermissions()->pluck('name')->toArray();
@@ -94,6 +138,23 @@ class RoleController extends Controller
         if (empty($role)) {
             return response()->json(["message" => "No role with this id"], 404);
         } elseif ($role->delete()) {
+
+            // log section
+            $user_id = Auth::user()->id;
+            $old_value = null;
+            $new_value = null;
+            $module = 'roles';
+            $method_id = 3;
+            $message = __('logTr.deleteRole');
+
+            LogHelper::storeLog(
+                $user_id,
+                json_decode(json_encode($old_value)),
+                json_decode(json_encode($new_value)),
+                $module,
+                $method_id,
+                $message,
+            );
             return response()->json(['message' => 'Role deleted successfully'], 200);
         } else {
             return response()->json(["message" => "Please Check errors"], 500);

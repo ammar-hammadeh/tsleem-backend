@@ -67,7 +67,7 @@ use App\Http\Controllers\NotificationController;
 //     return true;
 // }
 
-function sendSMS()
+function sendSMS($phone,$message)
 {
     $ch = curl_init();
 
@@ -81,10 +81,10 @@ function sendSMS()
     {
 
         "userName": "Kidana",
-        "numbers":"966562948992",
+        "numbers":"966$phone",
         "userSender": "tsleem",
         "apiKey": "10455062e2f213814f24c14e21050b31",
-        "msg": "رمز التحقق:1414",
+        "msg": "$message",
         "msgEncoding": "UTF8"
     }
     EOT;

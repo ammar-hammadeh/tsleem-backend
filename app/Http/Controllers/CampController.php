@@ -6,6 +6,7 @@ use App\Models\Camp;
 use App\Models\Square;
 use App\Models\Company;
 use App\Models\Location;
+use App\Helper\LogHelper;
 use App\Models\AssignCamp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -144,9 +145,27 @@ class CampController extends Controller
         DB::beginTransaction();
         try {
             $res = Camp::create($request->input());
-            // $user_id = Auth::user()->type_id;
-            // $note = __('general.addCampLog') . $res->name;
-            // LogHelper::storeLog($user_id, 33, $note);
+            $camp = Camp::with('square')->find($res->id);
+
+            $user_id = Auth::user()->id;
+            $old_value = null;
+            $new_value = [
+                'name' => $camp->name,
+                'square' => $camp->square->name,
+                'is developed' => $camp->is_developed_text
+            ];
+            $module = 'camps';
+            $method_id = 1;
+            $message = __('logTr.addCamp');
+
+            LogHelper::storeLog(
+                $user_id,
+                json_decode(json_encode($old_value)),
+                json_decode(json_encode($new_value)),
+                $module,
+                $method_id,
+                $message,
+            );
             DB::commit();
             // if ($res) {
             return response()->json(["message" => "add new camp", "type" => $res], 200);
@@ -190,7 +209,7 @@ class CampController extends Controller
         if (!$id) {
             return response()->json(["message" => "Please Check errors", "errors" => "id isn't input"], 422);
         }
-        $camp = Camp::find($id);
+        $camp = Camp::with('square')->find($id);
         $validator = Validator::make($request->all(), [
             'name' => 'string|unique:camps,name,' . $camp->id,
             'square_id' => 'int|between:0,9223372036854775807',
@@ -207,12 +226,30 @@ class CampController extends Controller
         if ($camp) {
             DB::beginTransaction();
             try {
-
+                $user_id = Auth::user()->id;
+                $old_value = [
+                    'name' => $camp->name,
+                    'square' => $camp->square->name,
+                    'is developed' => $camp->is_developed_text
+                ];
                 $camp->update($request->input());
-                // $user_id = Auth::user()->type_id;
-                // $note = __('general.updateCampLog') . $camp->name;
-                // LogHelper::storeLog($user_id, 34, $note);
+                $new_value = [
+                    'name' => $camp->name,
+                    'square' => $camp->square->name,
+                    'is developed' => $camp->is_developed_text
+                ];
+                $module = 'camps';
+                $method_id = 2;
+                $message = __('logTr.updateCamp');
 
+                LogHelper::storeLog(
+                    $user_id,
+                    json_decode(json_encode($old_value)),
+                    json_decode(json_encode($new_value)),
+                    $module,
+                    $method_id,
+                    $message,
+                );
                 DB::commit();
                 return response()->json(["message" => "camp updated successfully"], 200);
             } catch (\Exception $e) {
@@ -230,13 +267,26 @@ class CampController extends Controller
         if (!$camp)
             return response()->json(["message" => "please check the camp id and try again"], 204);
 
+        $old_value = ['status' => $camp->status];
         if ($camp->status == 'notready')
             $camp->update(['status' => 'ready']);
         else
             $camp->update(['status' => 'notready']);
-        // $user_id = Auth::user()->type_id;
-        // $note = __('general.changeStatusCampLog') . $camp->name;
-        // LogHelper::storeLog($user_id, 36, $note);
+
+        $user_id = Auth::user()->id;
+        $new_value = ['status' => $camp->status];
+        $module = 'camps';
+        $method_id = 4;
+        $message = __('logTr.changeStatusCamp');
+
+        LogHelper::storeLog(
+            $user_id,
+            json_decode(json_encode($old_value)),
+            json_decode(json_encode($new_value)),
+            $module,
+            $method_id,
+            $message,
+        );
 
         return response()->json(["data" => $camp], 200);
     }
@@ -244,13 +294,25 @@ class CampController extends Controller
     public function delete($id)
     {
         $camp = Camp::find($id);
+
         if (!$camp)
             return response()->json(["message" => "المخيم غير موجود"], 500);
+        $old_value = ['name' => $camp->name];
         $camp->delete();
+        $user_id = Auth::user()->id;
+        $new_value = ['name' => $camp->name];
+        $module = 'camps';
+        $method_id = 3;
+        $message = __('logTr.deleteCamp');
 
-        // $user_id = Auth::user()->type_id;
-        // $note = __('general.deleteCampLog') . $camp->name;
-        // LogHelper::storeLog($user_id, 35, $note);
+        LogHelper::storeLog(
+            $user_id,
+            json_decode(json_encode($old_value)),
+            json_decode(json_encode($new_value)),
+            $module,
+            $method_id,
+            $message,
+        );
 
         return response()->json(["message" => "تم حذف المخيم"]);
     }

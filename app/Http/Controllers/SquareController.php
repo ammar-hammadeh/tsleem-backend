@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Square;
+use App\Helper\LogHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -46,7 +47,7 @@ class SquareController extends Controller
     //         $data .= " and name = '" . $request->input('square_name') . "'";
     //     }
     //     if ($request->start) {
-    //         $data .= " and DATE(camps.created_at) >= '" . $request->from . "'";
+    //         $data .= " and DATE(`camps`.created_at) >= '" . $request->from . "'";
     //     }
     //     if ($request->end) {
     //         $data .= " and DATE(camps.created_at) <= '" . $request->to . "'";
@@ -95,9 +96,21 @@ class SquareController extends Controller
         DB::beginTransaction();
         try {
             $res = Square::create($request->input());
-            // $user_id = Auth::user()->type_id;
-            // $note = __('general.addSquareLog') . $res->name;
-            // LogHelper::storeLog($user_id, 30, $note);
+            $user_id = Auth::user()->id;
+            $old_value = null;
+            $new_value = ["name" => $res->name];
+            $module = 'square';
+            $method_id = 1;
+            $message = __('logTr.addSquare');
+
+            LogHelper::storeLog(
+                $user_id,
+                json_decode(json_encode($old_value)),
+                json_decode(json_encode($new_value)),
+                $module,
+                $method_id,
+                $message,
+            );
             DB::commit();
 
             // if ($res) {
@@ -124,7 +137,24 @@ class SquareController extends Controller
 
             DB::beginTransaction();
             try {
+                $old_value = ['name' => $square->name];
                 $square->update($request->input());
+                $user_id = Auth::user()->id;
+                $new_value = ['name' => $square->name];
+                $module = 'square';
+                $method_id = 2;
+                $message = __('logTr.updateSquare');
+
+                LogHelper::storeLog(
+                    $user_id,
+                    json_decode(json_encode($old_value)),
+                    json_decode(json_encode($new_value)),
+                    $module,
+                    $method_id,
+                    $message,
+                );
+
+
                 DB::commit();
                 return response()->json(["message" => "square updated successfully"], 200);
             } catch (\Exception $e) {
@@ -146,6 +176,22 @@ class SquareController extends Controller
 
         DB::beginTransaction();
         try {
+            $user_id = Auth::user()->id;
+            $old_value = ['name' => $type->name];
+            $new_value = null;
+            $module = 'square';
+            $method_id = 3;
+            $message = __('logTr.deleteSquare');
+
+            LogHelper::storeLog(
+                $user_id,
+                json_decode(json_encode($old_value)),
+                $new_value,
+                $module,
+                $method_id,
+                $message,
+            );
+
             $type->delete();
             DB::commit();
             // if ($res) {

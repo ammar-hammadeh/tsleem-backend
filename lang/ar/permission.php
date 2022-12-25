@@ -66,6 +66,7 @@
         'assign-delete' => 'حذف تخصيص',
         'assign-re-customization' => 'إعادة تخصيص',
 
+        // مرحلة التثبيت
         'signature-show-file' => 'عرض محضر التثبيت',
         'signature-index' => 'عرض التخصيصات المثبتة',
         'signature-contract' => 'توقيع محضر تثبيت',
@@ -138,6 +139,9 @@
         'gis-electrical-meter-update' => 'تعديل عداد كهربائية',
         'gis-electrical-meter-delete' => 'حذف عداد كهربائية',
 
+        'gis-map-index' => 'الخريطة التفاعلية',
+
+
         'location' => 'المواقع',
         'kitchen' => 'المطبخ',
         'tent' => 'الخيم',
@@ -150,6 +154,8 @@
         'washroom' => 'الحمامات',
         'report' => 'التقرير',
         'report-log' => 'log',
+        'report-system-log' => 'log system',
+        'map' => 'خريطة',
 
         'user' => 'المستخدمين',
         'employee' => 'الموظفيين',

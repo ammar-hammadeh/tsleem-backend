@@ -2,15 +2,27 @@
 
 namespace Modules\Core\Entities;
 
+use Spatie\Activitylog\LogOptions;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Models\Permission as spatiPermission;
 
 class Permission extends spatiPermission
 {
+    use LogsActivity;
     protected $fillable = [
         'name',
         'guard_name',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'name'
+            ])->useLogName('permissions');
+    }
+
 
 
     protected $appends = [

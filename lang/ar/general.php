@@ -57,5 +57,9 @@ return [
     'no' => 'لا',
     'updated' => 'تعديل',
     'created' => 'انشاء',
-    'deleted' => 'حذف'
+    'deleted' => 'حذف',
+    'commercial'=>'السجل التجاري',
+    'license' => 'الترخيص',
+    'phone' => 'رقم الهاتف',
+    'hardcopyid' => 'رقم الهوية'
 ];

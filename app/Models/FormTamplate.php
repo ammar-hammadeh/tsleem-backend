@@ -2,14 +2,25 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Spatie\Activitylog\LogOptions;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class FormTamplate extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
     protected $table = 'form_tamplates';
     protected $guarded = [];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'name',
+                'body',
+            ])->useLogName('forms');
+    }
 
     public function Questions()
     {

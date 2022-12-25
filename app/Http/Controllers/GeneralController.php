@@ -7,6 +7,7 @@ use App\Models\AssignCamp;
 use App\Models\Camp;
 use App\Models\Company;
 use App\Models\Square;
+use App\Models\Type;
 use App\Models\UserAppointment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -32,7 +33,7 @@ class GeneralController extends Controller
         $assignations = AssignCamp::count();
         $appointments = UserAppointment::count();
 
-        //Charts 
+        //Charts
         //     $assignations_chart = AssignCamp::selectRaw(
         //         "
         // count(case when status = 'pending' then 1 end ) as Pending,
@@ -44,6 +45,27 @@ class GeneralController extends Controller
         //         ->groupBy('status')
         //         ->get();
 
+
+        $data = [
+            /////Cards
+            'total_user' => $total_user,
+            'total_company' => $total_company,
+            'total_camps' => $total_camps,
+            'total_square' => $total_square,
+            'pending_user' => $pending_user,
+            'ready_camps' => $ready_camps,
+
+            /////New
+            //card
+            'assignations' => $assignations, // عدد التخصيصات الكلي
+            'appointments' => $appointments, // عدد الحجوزات الكلي
+
+        ];
+        return response()->json(['data' => $data], 200);
+    }
+
+    public function DashboardChart()
+    {
         $assignations_chart_data = AssignCamp::selectRaw('status as lables,count(*) as count')
             ->groupBy('status')
             ->get();
@@ -66,27 +88,31 @@ class GeneralController extends Controller
         $camps_chart['lables'] = $camps_chart_data->pluck('lables');
         $camps_chart['count'] = $camps_chart_data->pluck('count');
 
-        $data = [
-            /////Cards
-            'total_user' => $total_user,
-            'total_company' => $total_company,
-            'total_camps' => $total_camps,
-            'total_square' => $total_square,
-            'pending_user' => $pending_user,
-            'ready_camps' => $ready_camps,
 
-            /////New
-            //card
-            'assignations' => $assignations, // عدد التخصيصات الكلي
-            'appointments' => $appointments, // عدد الحجوزات الكلي
+        $data = [
             //Carts
-            'assignations_chart' => $assignations_chart, // التخصيصات بحسب الحالة 
-            'appointments_chart' => $appointments_chart, // الحجوزات بحسب حالة التسليم 
+            'assignations_chart' => $assignations_chart, // التخصيصات بحسب الحالة
+            'appointments_chart' => $appointments_chart, // الحجوزات بحسب حالة التسليم
             'camps_chart' => $camps_chart, // المخيمات بحسب الحالة
         ];
-        return response()->json(['user' => $user, 'data' => $data], 200);
+        return response()->json(['data' => $data], 200);
     }
 
+    public function FilterUserChart(Request $request)
+    {
+
+        $users_chart_data = User::selectRaw('status as lables,count(*) as count')
+            ->groupBy('status');
+
+        if ($request->type_id)
+            $users_chart_data->where('type_id', $request->type_id);
+
+        $users_chart_data->get();
+
+        $users_chart['lables'] = $users_chart_data->pluck('lables');
+        $users_chart['count'] = $users_chart_data->pluck('count');
+        return response()->json(['data' => $users_chart], 200);
+    }
     public function TestSMS()
     {
         sendSMS();
@@ -109,7 +135,7 @@ class GeneralController extends Controller
             "name" => 'Ammar',
             "subject" => "Get Started, Welcome in " . env('APP_NAME')
         );
-        
+
         Mail::to('ammar.hammadeh94@gmail.com')->send(new SendEmail($data, "NewAccount"));
     }
 }

@@ -6,12 +6,13 @@ use App\Models\Camp;
 use App\Models\Type;
 use App\Models\Square;
 use App\Models\Company;
+use App\Helper\LogHelper;
 use App\Models\AssignCamp;
 use Illuminate\Http\Request;
+use Modules\Core\Entities\User;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\AssignCampsRequest;
 use App\Http\Requests\UpdateAssignCampsRequest;
-use Modules\Core\Entities\User;
 
 class AssignCampController extends Controller
 {
@@ -184,8 +185,31 @@ class AssignCampController extends Controller
                 'assigner_company_id' => $assigner_company_id,
                 'square_id' => $request->square_id,
                 'camp_id' => $camp_id,
+                'contract_status' => 'signed'
             ];
-            AssignCamp::create($data);
+            $new = AssignCamp::create($data);
+
+            $assignation = AssignCamp::with('getCompany', 'getCamp', 'getSquare')->find($new->id);
+            $user_id = Auth::user()->id;
+            $old_value = null;
+            $new_value = [
+                'company' => $assignation->getCompany->name,
+                'square' => $assignation->getSquare->name,
+                'camp' => $assignation->getCamp->name,
+            ];
+            $module = 'assignCamps';
+            $method_id = 1;
+            $message = __('logTr.addCamp');
+
+            LogHelper::storeLog(
+                $user_id,
+                json_decode(json_encode($old_value)),
+                json_decode(json_encode($new_value)),
+                $module,
+                $method_id,
+                $message,
+            );
+
             $notificationMessage = __('general.newAssignation');
             $link = "/assign";
             (new NotificationController)->addNotification($company->owner_id, $notificationMessage, $link);
@@ -228,7 +252,7 @@ class AssignCampController extends Controller
     public function updateCampAssignation($id, UpdateAssignCampsRequest $request)
     {
 
-        $camp = AssignCamp::find($id);
+        $camp = AssignCamp::with('getCompany', 'getCamp', 'getSquare')->find($id);
         if (!$camp)
             return response()->json('please check the assignation id and try again', 500);
 
@@ -239,6 +263,7 @@ class AssignCampController extends Controller
 
         if ($check)
             return response()->json('this camp is already assigned to another company', 500);
+
 
         $userTypeID = Auth::user()->type_id;
         $userType = Type::where('id', $userTypeID)->value('code');
@@ -254,7 +279,34 @@ class AssignCampController extends Controller
             'square_id' => $request->square_id,
             'camp_id' => $request->camp_id,
         ];
+
+        // $assignation = AssignCamp::with('getCompany', 'getCamp', 'getSquare')->find();
+        $old_value = [
+            'company' => $camp->getCompany->name,
+            'square' => $camp->getSquare->name,
+            'camp' => $camp->getCamp->name,
+        ];
         $camp->update($data);
+        $user_id = Auth::user()->id;
+        $new_value = [
+            'company' => $camp->getCompany->name,
+            'square' => $camp->getSquare->name,
+            'camp' => $camp->getCamp->name,
+        ];
+        $module = 'assignCamps';
+        $method_id = 2;
+        $message = __('logTr.updateCamp');
+
+        LogHelper::storeLog(
+            $user_id,
+            json_decode(json_encode($old_value)),
+            json_decode(json_encode($new_value)),
+            $module,
+            $method_id,
+            $message,
+        );
+
+
 
         return response()->json(['message' => 'the assignation has been updated successfully'], 200);
     }
@@ -307,9 +359,30 @@ class AssignCampController extends Controller
     public function deleteCampAssignation($id)
     {
 
-        $camp = AssignCamp::find($id);
+        $camp = AssignCamp::with('getCompany', 'getCamp', 'getSquare')->find($id);
         if (!$camp)
             return response()->json('please check the assignation id and try again', 500);
+
+        $user_id = Auth::user()->id;
+        $old_value = [
+            'company' => $camp->getCompany->name,
+            'square' => $camp->getSquare->name,
+            'camp' => $camp->getCamp->name,
+        ];
+        $new_value = null;
+        $module = 'assignCamps';
+        $method_id = 3;
+        $message = __('logTr.deleteCamp');
+
+        LogHelper::storeLog(
+            $user_id,
+            json_decode(json_encode($old_value)),
+            json_decode(json_encode($new_value)),
+            $module,
+            $method_id,
+            $message,
+        );
+
 
         $camp->delete();
         return response()->json(['message' => 'Assignation has been deleted successfully'], 200);

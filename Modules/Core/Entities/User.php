@@ -2,21 +2,23 @@
 
 namespace Modules\Core\Entities;
 
-use App\Models\Category;
 use App\Models\City;
-use App\Models\Company;
 use App\Models\Type;
+use App\Models\Company;
+use App\Models\Category;
 use App\Models\UserAttachement;
-use Tymon\JWTAuth\Contracts\JWTSubject;
-use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-// use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use Spatie\Activitylog\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
+use Tymon\JWTAuth\Contracts\JWTSubject;
+// use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Notifications\Notifiable;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable implements JWTSubject
 {
-    use HasRoles, HasFactory, Notifiable;
+    use HasRoles, HasFactory, Notifiable, LogsActivity;
 
     // protected $fillable = [
     //     'name',
@@ -26,6 +28,24 @@ class User extends Authenticatable implements JWTSubject
     //     'status',
     //     'is_customer'
     // ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'type_id',
+                'city_id',
+                'parent_id',
+                'company_id',
+                'name',
+                'phone',
+                'signature',
+                'email',
+                'status',
+                'deleted_at',
+            ])->useLogName('users');
+    }
+
     protected $guarded = [];
 
     protected $hidden = [

@@ -23,8 +23,10 @@ return new class extends Migration
             $table->unsignedBigInteger('camp_id');
             $table->timestamp('deleted_at')->nullable();
             $table->enum('contract_status', ['signed', 'unsigned', 'not_created'])->default('not_created');
-            $table->enum('status', ['pending', 'returned', 'appointment', 'answered' ,'deliverd'])->default('pending');
+            $table->enum('status', ['pending', 'returned', 'appointment', 'answered', 'deliverd'])->default('pending');
             $table->enum('forms_status', ['signed', 'unsigned'])->default('unsigned');
+            $table->tinyInteger('notified')->default('0');
+            $table->timestamp('last_notified')->nullable();
             $table->timestamps();
         });
     }

@@ -2,30 +2,33 @@
 
 namespace App\Http\Controllers;
 
-use Alkoumi\LaravelHijriDate\Hijri;
-use App\Helper\fileManagerHelper;
-use App\Http\Requests\FormTamplateRequest;
-use App\Models\AnswersAttachement;
-use App\Models\AssignCamp;
+use stdClass;
 use App\Models\Camp;
-use App\Models\Company;
-use App\Models\FormCategory;
-use App\Models\FormSign;
-use App\Models\FormSigner;
-use App\Models\formsQuestions;
-use App\Models\FormTamplate;
-use App\Models\Question;
-use App\Models\QuestionCategory;
-use App\Models\Square;
-use App\Models\TasleemFormAnswers;
 use App\Models\Type;
+use App\Models\Square;
+use App\Models\Company;
+use App\Models\FormSign;
+use App\Models\Question;
+use App\Helper\LogHelper;
+use App\Models\AssignCamp;
+use App\Models\FormSigner;
+use App\Models\FormCategory;
+use App\Models\FormTamplate;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use App\Models\formsQuestions;
 use Modules\Core\Entities\User;
 use PhpParser\Node\Expr\Assign;
+use App\Models\QuestionCategory;
+use App\Helper\fileManagerHelper;
+use App\Models\AnswersAttachement;
+use App\Models\TasleemFormAnswers;
+use Illuminate\Support\Facades\DB;
 use PhpParser\Node\Expr\AssignRef;
+use Alkoumi\LaravelHijriDate\Hijri;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\FormTamplateRequest;
+use Illuminate\Database\Eloquent\Collection;
 
 class FormController extends Controller
 {
@@ -181,6 +184,26 @@ class FormController extends Controller
                 'isCategorized' => $request->isCategorized
             ]);
 
+            $user_id = Auth::user()->id;
+            $old_value = null;
+            $new_value = [
+                'name' => $form->name,
+                'body' => $form->body,
+            ];
+            $module = 'formTemplate';
+            $method_id = 1;
+            $message = __('logTr.addFormTemplate');
+
+            LogHelper::storeLog(
+                $user_id,
+                json_decode(json_encode($old_value)),
+                json_decode(json_encode($new_value)),
+                $module,
+                $method_id,
+                $message,
+            );
+
+
             $signers = $request->signers;
             foreach ($signers as $signer) {
                 FormSigner::create([
@@ -254,11 +277,33 @@ class FormController extends Controller
                         'type_id' => $signer
                     ]);
                 }
+
+                $user_id = Auth::user()->id;
+                $old_value = [
+                    'name' => $form->name,
+                    'body' => $form->body,
+                ];
                 $form->update([
                     'name' => $request->name,
                     'body' => $request->body,
                     'isCategorized' => $request->isCategorized
                 ]);
+                $new_value = [
+                    'name' => $form->name,
+                    'body' => $form->body,
+                ];
+                $module = 'formTemplate';
+                $method_id = 2;
+                $message = __('logTr.updateFormTemplate');
+
+                LogHelper::storeLog(
+                    $user_id,
+                    json_decode(json_encode($old_value)),
+                    json_decode(json_encode($new_value)),
+                    $module,
+                    $method_id,
+                    $message,
+                );
                 DB::commit();
                 return response()->json(['message' => 'تم تعديل البيانات بنجاح'], 200);
             } catch (\Exception $e) {
@@ -274,6 +319,25 @@ class FormController extends Controller
     {
         $question = FormTamplate::find($id);
         if ($question) {
+            $user_id = Auth::user()->id;
+            $new_value = null;
+            $old_value = [
+                'name' => $question->name,
+                'body' => $question->body,
+            ];
+            $module = 'formTemplate';
+            $method_id = 3;
+            $message = __('logTr.deleteFormTemplate');
+
+            LogHelper::storeLog(
+                $user_id,
+                json_decode(json_encode($old_value)),
+                json_decode(json_encode($new_value)),
+                $module,
+                $method_id,
+                $message,
+            );
+
             $question->delete();
             return response()->json(['message' => 'question has been deleted']);
         } else {
@@ -450,6 +514,8 @@ class FormController extends Controller
         $userIDByType = User::where('type_id', $uType->id)->pluck('id')->toArray();
         // $questionCategories = QuestionCategory::get();
         $Fsigns = FormSign::where('assign_camps_id', $request->assign_camps_id)->where('form_id', $request->form_id)->whereIn('user_id', $userIDByType)->get();
+        $userByType = User::where('type_id', $uType->id)->get();
+
         // return response()->json($Fsigns);
         //
 
@@ -499,7 +565,6 @@ class FormController extends Controller
             ->pluck('types.id')->toArray();
 
         if (Auth::user()->type_id == Type::where('code', 'admin')->value('id')) {
-            $userByType = User::where('type_id', $uType->id)->get();
 
             $type_need_sign = Type::join('form_signers', 'types.id', 'form_signers.type_id')->with('users', function ($q) {
                 $q->where('users.status', 'active');
@@ -516,10 +581,28 @@ class FormController extends Controller
                 ];
                 $type_need_sign->push($receiver_sign);
             }
+        } elseif (in_array(Auth::user()->id, $userIDByType) && count($Fsigns) == 0) {
+            $type_need_sign = [];
+            $receiver_sign = new StdClass();
+            $receiver_sign->id = $uType->id;
+            $receiver_sign->type_name = $uType->name;
+            $receiver_sign->users = Auth::user();
+            $receiver_sign->name_in_form = $uType->name_in_form;
+            // $receiver_sign = {
+            //     'id' => $uType->id,
+            //     'type_name' => $uType->name,
+            //     'users' => $userByType,
+            //     'name_in_form' => $uType->name_in_form
+            // };
+            array_push($type_need_sign, $receiver_sign);
+            // $type_need_sign = $receiver_sign;
+            // $type_need_sign = new Collection($receiver_sign);
+
         } else {
-            $userByType = User::where('id', Auth::user()->id)->get();
+            // $userByType = User::where('id', Auth::user()->id)->get();
             $type_need_sign = Type::join('form_signers', 'types.id', 'form_signers.type_id')->with('users', function ($q) {
                 $q->where('users.status', 'active');
+                $q->where('users.id', Auth::user()->id);
             })->where('form_signers.form_id', $request->form_id)
                 ->whereNotIn('types.id', $signatured_type)->select('types.id', 'types.name as type_name', 'types.name_in_form as name_in_form')
                 ->where('types.id', Auth::user()->type_id)
@@ -622,14 +705,13 @@ class FormController extends Controller
                 $assign_camp->update([
                     'status' => 'answered'
                 ]);
-                $signers = FormSigner::where('form_id', $request->form_id)->pluck('type_id')->toArray();
-                $notificationMessage = "يرجى توقيع محضر التسليم";
-                $usersByType = User::whereIn('type_id', $signers->type_id)->get();
-                foreach ($usersByType as $userByType) {
-                    $link = "/appointments/$request->assign_camps_id/form";
-                    (new NotificationController)->addNotification($userByType->id, $notificationMessage, $link);
-                }
-        
+                // $signers = FormSigner::where('form_id', $request->form_id)->pluck('type_id')->toArray();
+                // $notificationMessage = "يرجى توقيع محضر التسليم";
+                // $usersByType = User::whereIn('type_id', $signers->type_id)->get();
+                // foreach ($usersByType as $userByType) {
+                //     $link = "/appointments/$request->assign_camps_id/form";
+                //     (new NotificationController)->addNotification($userByType->id, $notificationMessage, $link);
+                // }
             }
         } else {
 
@@ -689,14 +771,6 @@ class FormController extends Controller
                 $assign_camp->update([
                     'status' => 'answered'
                 ]);
-                $signers = FormSigner::where('form_id', $request->form_id)->pluck('type_id')->toArray();
-                $notificationMessage = "يرجى توقيع محضر التسليم";
-                $usersByType = User::whereIn('type_id', $signers->type_id)->get();
-                foreach ($usersByType as $userByType) {
-                    $link = "/appointments/$request->assign_camps_id/form";
-                    (new NotificationController)->addNotification($userByType->id, $notificationMessage, $link);
-                }
-        
             }
         }
         return response()->json(['message' => 'تم الحفظ بنجاح'], 200);
@@ -751,5 +825,46 @@ class FormController extends Controller
             return response()->json(['message' => 'attachement deleted succesfully'], 200);
         } else
             return response()->json(['message' => 'data not found'], 500);
+    }
+
+    public function SendNotification(Request $request)
+    {
+
+        // Owner Notification
+        $Acamps = AssignCamp::find($request->assign_camps_id);
+        $compType = Company::find($Acamps->receiver_company_id);
+        // $uType = Type::find($compType->type_id);
+        $owner = User::find($compType->owner_id);
+        // $userByType = User::where('type_id', $uType->id)->pluck('id')->toArray();
+
+        // all signers
+
+        $singer = [];
+        foreach ($request->form_ids as $form_id) {
+            $usersid_need_sign = DB::table('types')->join('form_signers', 'types.id', 'form_signers.type_id')->join('users', 'users.type_id', 'users.id')
+                ->where('users.status', 'active')->where('form_signers.form_id', $form_id)->select('users.id as id')->pluck('id')->toArray();
+
+            foreach ($usersid_need_sign as $userid) {
+                if (!in_array($userid, $singer))
+                    array_push($singer, $userid);
+            }
+        }
+        if ($owner != '') {
+            if (!in_array($owner->id, $singer))
+                array_push($singer, $owner->id);
+        }
+
+        $notificationMessage = "يرجى توقيع محضر التسليم";
+        $link = "/appointments/$request->assign_camps_id/form";
+
+        foreach ($singer as $s) {
+            (new NotificationController)->addNotification($s, $notificationMessage, $link);
+        }
+
+        $Acamps->update([
+            'notified' => 1,
+            'last_notified' => now()
+        ]);
+        return response()->json(['message' => 'تم إرسال الإشعارات بنجاح', 'assign_camp' => AssignCamp::find($request->assign_camps_id)], 200);
     }
 }

@@ -82,11 +82,11 @@ class PermissionSeeder extends Seeder
                 'assign-update',
                 'assign-delete',
                 'assign-re-customization',
-
-                'signature-show-file',
-                'signature-index',
-                'signature-all',
-                'signature-bulk',
+                // مرحلة التثبيت
+                // 'signature-show-file',
+                // 'signature-index',
+                // 'signature-all',
+                // 'signature-bulk',
 
                 'appointment-creat-index',
                 'appointment-create',
@@ -96,6 +96,8 @@ class PermissionSeeder extends Seeder
                 'appointment-form-view',
                 'appointment-form-answer',
                 // 'appointment-form-answer-edit',
+
+                // تثبيت
 
                 'appointment-contract',
                 'signature-contract',
@@ -157,8 +159,10 @@ class PermissionSeeder extends Seeder
                 'gis-electrical-meter-update',
                 'gis-electrical-meter-delete',
 
-                'report-log',
+                'gis-map-index',
 
+                'report-log',
+                'report-system-log'
 
             ];
 
@@ -176,7 +180,7 @@ class PermissionSeeder extends Seeder
             'question', 'question', 'question', 'question',
             'tamplate', 'tamplate', 'tamplate', 'tamplate',
             'assign', 'assign', 'assign', 'assign', 'assign',
-            'signature', 'signature', 'signature', 'signature',
+            // 'signature', 'signature', 'signature', 'signature',
             'appointment', 'appointment', 'appointment', 'appointment', 'appointment', 'appointment',
             'contruct', 'contruct', 'contruct', 'contruct',
             'delivery', 'delivery',
@@ -190,7 +194,8 @@ class PermissionSeeder extends Seeder
             'zone', 'zone',
             'washroom', 'washroom', 'washroom', 'washroom',
             'electrical-meter', 'electrical-meter', 'electrical-meter', 'electrical-meter',
-            'report'
+            'map',
+            'report', 'report'
         ];
         $result = array();
 

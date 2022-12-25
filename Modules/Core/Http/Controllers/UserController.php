@@ -6,6 +6,7 @@ use App\Models\City;
 use App\Models\Type;
 use App\Models\Company;
 use App\Models\Category;
+use App\Helper\LogHelper;
 use App\Jobs\SendEmailJob;
 use App\Models\AssignCamp;
 use Illuminate\Http\Request;
@@ -21,12 +22,12 @@ use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use App\Models\EngineerOffceCategories;
 use Illuminate\Support\Facades\Storage;
 use Modules\Core\Rules\MatchOldPassword;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\NotificationController;
-use Illuminate\Support\Facades\Mail;
 
 class UserController extends Controller
 {
@@ -67,6 +68,7 @@ class UserController extends Controller
         ];
         return $filters;
     }
+
     public function index(Request $request)
     {
         $paginate = env('PAGINATE');
@@ -78,15 +80,18 @@ class UserController extends Controller
             $user_type = Auth::user()->type_id;
             if (Type::where('id', $user_type)->value('code') == 'raft_company') {
                 $filters = $this->filters();
-                array_push($filters, [
-                    'name' => 'type_id',
-                    'value' => '',
-                    'label' => __('general.user type'),
-                    'type' => 'auto-complete',
-                    'items' => Type::whereIn('code', ['raft_company', 'raft_office'])->get(),
-                    'itemText' => 'name',
-                    'itemValue' => 'id'
-                ]);
+                array_push(
+                    $filters,
+                    [
+                        'name' => 'type_id',
+                        'value' => '',
+                        'label' => __('general.user type'),
+                        'type' => 'auto-complete',
+                        'items' => Type::whereIn('code', ['raft_company', 'raft_office'])->get(),
+                        'itemText' => 'name',
+                        'itemValue' => 'id'
+                    ]
+                );
                 $users = User::where('parent_id', Auth::user()->id)->with('type', 'Company', 'roles');
                 if ($request->name) {
                     $users->where('users.name', 'like', '%' . $request->name . '%');
@@ -109,30 +114,67 @@ class UserController extends Controller
             }
         }
         $filters = $this->filters();
-        array_push($filters, [
-            'name' => 'type_id',
-            'value' => '',
-            'label' => __('general.user type'),
-            'type' => 'auto-complete',
-            'items' => Type::whereNull('deleted_at')->get(),
-            'itemText' => 'name',
-            'itemValue' => 'id'
-        ]);
-        array_push($filters, [
-            'name' => 'status',
-            'value' => '',
-            'label' => __('general.status'),
-            'type' => 'auto-complete',
-            'items' => [
-                ['name' => 'pending', 'label' => __('general.pending')],
-                ['name' => 'active', 'label' => __('general.active')],
-                ['name' => 'disabled', 'label' => __('general.disabled')],
-                ['name' => 'review', 'label' => __('general.review')],
-                ['name' => 'rejected', 'label' => __('general.rejected')],
+        //     array_push($filters
+        // );
+        $status = $request->status ? $request->status : '';
+        array_push(
+            $filters,
+            [
+                'name' => 'type_id',
+                'value' => '',
+                'label' => __('general.user type'),
+                'type' => 'auto-complete',
+                'items' => Type::whereNull('deleted_at')->get(),
+                'itemText' => 'name',
+                'itemValue' => 'id'
             ],
-            'itemText' => 'label',
-            'itemValue' => 'name'
-        ]);
+            [
+                'name' => 'status',
+                'value' => $status,
+                'label' => __('general.status'),
+                'type' => 'auto-complete',
+                'items' => [
+                    ['name' => 'pending', 'label' => __('general.pending')],
+                    ['name' => 'active', 'label' => __('general.active')],
+                    ['name' => 'disabled', 'label' => __('general.disabled')],
+                    ['name' => 'review', 'label' => __('general.review')],
+                    ['name' => 'rejected', 'label' => __('general.rejected')],
+                ],
+                'itemText' => 'label',
+                'itemValue' => 'name'
+            ],
+            [
+                'name' => 'phone',
+                'value' => '',
+                'label' => __('general.phone'),
+                'type' => 'text',
+                'items' => '',
+            ],
+            [
+                'name' => 'license',
+                'value' => '',
+                'label' => __('general.license'),
+                'type' => 'text',
+                'items' => '',
+            ],
+            [
+                'name' => 'commercial',
+                'value' => '',
+                'label' => __('general.commercial'),
+                'type' => 'text',
+                'items' => '',
+            ],
+            [
+                'name' => 'hardcopyid',
+                'value' => '',
+                'label' => __('general.hardcopyid'),
+                'type' => 'text',
+                'items' => '',
+            ]
+
+
+
+        );
 
         $users = User::whereRaw('((parent_id is null) or (parent_id is not null and type_id =' . $office_type . '))')
             ->with('type', 'Company', 'roles');
@@ -155,11 +197,29 @@ class UserController extends Controller
         if ($request->end)
             $users->whereDate('created_at', '<=', $request->end);
 
+        if ($request->hardcopyid)
+            $users->where('users.hardcopyid', $request->hardcopyid);
+
+        if ($request->phone)
+            $users->where('users.phone', $request->phone);
+
+        if ($request->license)
+            $users->whereHas('Company', function ($query) use ($request) {
+                $query->where('license', $request->license);
+            });
+        if ($request->commercial)
+            $users->whereHas('Company', function ($query) use ($request) {
+                $query->where('commercial', $request->commercial);
+            });
+
         $users = $users
             ->orderBy('created_at', 'asc')
             ->orderBy('id', 'asc')
             ->paginate($paginate);
-        return response()->json(["message" => "Users get successfully", "data" => $users, 'filters' => $filters], 200);
+        return response()->json([
+            "message" => "Users get successfully", "data" => $users,
+            'filters' => $filters
+        ], 200);
     }
 
     public function view($id)
@@ -326,10 +386,12 @@ class UserController extends Controller
             $user = User::find($id);
             if ($user) {
                 $data = array('status' => $request->status);
-                if ($request->status == "active")
+                if ($request->status == "active") {
                     $notificationMessage = __('general.activeRequest');
-                elseif ($request->status == "disabled")
+                    sendSMS($user->phone, 'تم تفعيل حسابك بنجاح');
+                } elseif ($request->status == "disabled") {
                     $notificationMessage = __('general.disabledRequest');
+                }
 
                 if ($request->has('reject_reason')) {
                     $notificationMessage = __('general.rejectRequest');
@@ -390,6 +452,22 @@ class UserController extends Controller
             return response()->json(["message" => "Failed to change you password, please check errors.", "errors" => $validator->errors()], 500);
         }
 
+        // log section
+        $user_id = Auth::user()->id;;
+        $old_value = null;
+        $new_value = null;
+        $module = 'users';
+        $method_id = 5;
+        $message = __('logTr.ResetPassword');
+
+        LogHelper::storeLog(
+            $user_id,
+            json_decode(json_encode($old_value)),
+            json_decode(json_encode($new_value)),
+            $module,
+            $method_id,
+            $message,
+        );
 
         if (User::find(Auth::guard()->user()->id)->update(['password' => Hash::make($request->new_password)]))
             return response()->json(["message" => "Your password successfully updated."], 200);
@@ -1036,6 +1114,23 @@ class UserController extends Controller
                 $signature = 'signatures/' . $fileName;
                 $data['signature'] =  $signature;
                 $user->update($data);
+
+                // log section
+                $user_id = Auth::user()->id;;
+                $old_value = null;
+                $new_value = null;
+                $module = 'users';
+                $method_id = Auth::guard()->user()->signature == null ? 1 : 2;
+                $message = Auth::guard()->user()->signature == null ? __('logTr.addsignature') : __('logTr.editsignature');
+
+                LogHelper::storeLog(
+                    $user_id,
+                    json_decode(json_encode($old_value)),
+                    json_decode(json_encode($new_value)),
+                    $module,
+                    $method_id,
+                    $message,
+                );
                 return response()->json(["message" => "signature updated successfully", 'user' => $user, 'signeture' => $signature], 200);
             }
         } else {
@@ -1078,6 +1173,34 @@ class UserController extends Controller
                     }
                 }
 
+                // log section
+                $user_id = Auth::user()->id;;
+                $old_value = [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'city' => $user->city->name,
+                    'category' => $user->category->name,
+                ];
+                $new_value = [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'city' => $user->city->name,
+                    'category' => $user->category->name,
+                ];
+                $module = 'users';
+                $method_id = 2;
+                $message = __('logTr.editProfile');
+
+                LogHelper::storeLog(
+                    $user_id,
+                    json_decode(json_encode($old_value)),
+                    json_decode(json_encode($new_value)),
+                    $module,
+                    $method_id,
+                    $message,
+                );
 
                 DB::commit();
                 return response()->json(["message" => "User updated successfully", 'user' => $user], 200);
@@ -1187,8 +1310,49 @@ class UserController extends Controller
         if ($request->has('paginate')) {
             $paginate = $request->paginate;
         }
-        $users = User::whereIn('status', ['pending', 'review'])->with('Type', 'Company')->paginate($paginate);
-        return response()->json(['data' => $users], 200);
+        $filters = $this->filters();
+        $status = $request->status ? $request->status : '';
+
+        array_push($filters, [
+            'name' => 'status',
+            'value' => $status,
+            'label' => __('general.status'),
+            'type' => 'auto-complete',
+            'items' => [
+                ['name' => 'pending', 'label' => __('general.pending')],
+                ['name' => 'review', 'label' => __('general.review')],
+            ],
+            'itemText' => 'label',
+            'itemValue' => 'name'
+        ]);
+
+        $users = User::whereIn('status', ['pending', 'review'])->with('Type', 'Company');
+
+        if ($request->status)
+            $users->where('users.status', $request->status);
+
+        if ($request->name) {
+            $users->where('users.name', 'like', '%' . $request->name . '%');
+        }
+        if ($request->company_name) {
+            $users->whereHas('Company', function ($query) use ($request) {
+                $query->where('name', $request->company_name);
+            });
+        }
+        if ($request->type_id)
+            $users->where('users.type_id', $request->type_id);
+
+        if ($request->status)
+            $users->where('users.status', $request->status);
+
+        if ($request->start)
+            $users->whereDate('created_at', '>=', $request->start);
+        if ($request->end)
+            $users->whereDate('created_at', '<=', $request->end);
+
+
+        $users = $users->paginate($paginate);
+        return response()->json(['data' => $users, 'filters' => $filters], 200);
     }
 
     public function UpdateUserRole($id, Request $request)

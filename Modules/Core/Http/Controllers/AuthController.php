@@ -7,6 +7,7 @@ use App\Models\City;
 use App\Models\Type;
 use App\Models\Company;
 use App\Models\Category;
+use App\Helper\LogHelper;
 use App\Jobs\SendEmailJob;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -48,8 +49,26 @@ class AuthController extends Controller
 
         $credentials = $request->only('email', 'password');
         if ($token = $this->guard()->attempt($credentials)) {
+            // log section
+            $user_id =  $this->guard()->user()->id;
+            $old_value = null;
+            $new_value = null;
+            $module = 'users';
+            $method_id = 6;
+            $message = __('logTr.Login');
+
+            LogHelper::storeLog(
+                $user_id,
+                json_decode(json_encode($old_value)),
+                json_decode(json_encode($new_value)),
+                $module,
+                $method_id,
+                $message,
+            );
             return $this->respondWithToken($token);
         }
+
+
         return response()->json(['message' => 'البريد الالكتروني أو كلمة المرور غير صحيحة'], 422);
     }
 
@@ -103,7 +122,7 @@ class AuthController extends Controller
             if ($request->category_id) {
                 $cat = Category::find($request->category_id);
                 $user->Category()->sync($cat);
-            }
+            }   
 
 
             if (Type::where('id', $request->type_id)->value('code') != 'admin') {
@@ -135,9 +154,35 @@ class AuthController extends Controller
                         'expire' => $request->ownerid_expire,
                     ]);
                 }
+
+                // log section
+                $user_id = $user->id;
+                $old_value = null;
+                $new_value = array_merge([
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'type' => $user->type->name,
+                    'phone' => $user->phone,
+                    'city' => $user->city->name,
+                    'category_id' => $user->category->name,
+                ], $result['newValue']);
+
+                $module = 'users';
+                $method_id = 6;
+                $message = __('logTr.RegisterDone');
+
+                LogHelper::storeLog(
+                    $user_id,
+                    json_decode(json_encode($old_value)),
+                    json_decode(json_encode($new_value)),
+                    $module,
+                    $method_id,
+                    $message,
+                );
+
                 dispatch(new SendEmailJob($user->email, new SendEmail($data, "NewAccount")))->onConnection('database');
                 $notificationMessage = __('general.userNeedApprove');
-                $link = "/users/request";
+                $link = "/users/view/" . $user->id;
                 (new NotificationController)->addNotification(1, $notificationMessage, $link);
             }
 
@@ -318,6 +363,16 @@ class AuthController extends Controller
             'parent_id' => $parent_id,
             'prefix' => $prefix == null ? $request->prefix : $prefix
         ]);
+
+        $newValue = [
+            'name' => $request->name,
+            'commercial' => $request->commercial,
+            'license' => $prefix != null ? $prefix . '-' . $request->license : $request->license,
+            'owner name' => $request->owner_name,
+            'kroky' => $kroky == null ? $request->kroky : $kroky,
+            'Owner identification number' => $request->owner_hardcopyid,
+            'prefix' => $prefix == null ? $request->prefix : $prefix,
+        ];
         if (!$company)
             return array('status' => 'false', 'message' => 'no company found', 'data' => null, 'code' => 401);
 
@@ -465,7 +520,7 @@ class AuthController extends Controller
             ]));
         }
 
-        return array('status' => 'true', 'message' => 'get data', 'data' => $company, 'code' => 200);
+        return array('status' => 'true', 'message' => 'get data', 'data' => $company, 'newValue' => $newValue, 'code' => 200);
     }
 
     public function permission_me()
@@ -575,6 +630,24 @@ class AuthController extends Controller
             if ($totalMinute > 60) {
                 return response()->json(['message' => 'Token is expired'], 500);
             }
+
+            $user = User::whereEmail($request['email'])->first();
+            // log section
+            $user_id = $user->id;;
+            $old_value = null;
+            $new_value = null;
+            $module = 'users';
+            $method_id = 5;
+            $message = __('logTr.ResetPassword');
+
+            LogHelper::storeLog(
+                $user_id,
+                json_decode(json_encode($old_value)),
+                json_decode(json_encode($new_value)),
+                $module,
+                $method_id,
+                $message,
+            );
         } else {
             return response()->json(['message' => 'Token is invalid'], 500);
         }

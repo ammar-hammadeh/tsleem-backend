@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\QuestionRequest;
 use App\Models\Input;
 use App\Models\Question;
+use App\Helper\LogHelper;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\QuestionRequest;
 
 class QuestionsController extends Controller
 {
@@ -94,6 +96,25 @@ class QuestionsController extends Controller
         # code...
         $question = Question::create($request->all());
         $question->inputs = $question->inputs;
+
+        $user_id = Auth::user()->id;
+        $old_value = null;
+        $new_value = [
+            'title' => $question->title,
+        ];
+        $module = 'question';
+        $method_id = 1;
+        $message = __('logTr.addQuestion');
+
+        LogHelper::storeLog(
+            $user_id,
+            json_decode(json_encode($old_value)),
+            json_decode(json_encode($new_value)),
+            $module,
+            $method_id,
+            $message,
+        );
+
         return response()->json(['message' => 'تم إنشاء الاستفسار بنجاح', 'question' => $question], 200);
     }
     public function edit($id)
@@ -108,8 +129,28 @@ class QuestionsController extends Controller
         # code...
         $question = Question::find($id);
         if ($question  != null) {
+
+            $user_id = Auth::user()->id;
+            $old_value = [
+                'title' => $question->title,
+            ];
             $question->update($request->all());
             $question->inputs = $question->inputs;
+            $new_value = [
+                'title' => $question->title,
+            ];
+            $module = 'question';
+            $method_id = 2;
+            $message = __('logTr.updateQuestion');
+
+            LogHelper::storeLog(
+                $user_id,
+                json_decode(json_encode($old_value)),
+                json_decode(json_encode($new_value)),
+                $module,
+                $method_id,
+                $message,
+            );
             return response()->json(['message' =>  'تم تعديل الاستفسار بنجاح', 'question' => $question], 200);
         } else {
             return response()->json(['message' => 'يوجد خطأ يرجى التأكد من البيانات'], 404);
@@ -122,6 +163,24 @@ class QuestionsController extends Controller
         if (!$question) {
             return response()->json(['message' => 'لايوجد بيانات مطابقة'], 404);
         }
+        $user_id = Auth::user()->id;
+        $new_value = null;
+        $old_value = [
+            'title' => $question->title,
+        ];
+        $module = 'question';
+        $method_id = 3;
+        $message = __('logTr.deleteQuestion');
+
+        LogHelper::storeLog(
+            $user_id,
+            json_decode(json_encode($old_value)),
+            json_decode(json_encode($new_value)),
+            $module,
+            $method_id,
+            $message,
+        );
+
         $question->delete();
         // $input->delete();
         return response()->json(['message' => 'تم حذف الاستفسار بنجاح'], 200);

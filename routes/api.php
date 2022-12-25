@@ -19,15 +19,18 @@ use App\Http\Controllers\ElectricalMeterController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\EngineerOfficeCategoryController;
 use App\Http\Controllers\EstablishmentController;
+use App\Http\Controllers\GisController;
 use App\Http\Controllers\KitchenController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\PlotController;
 use App\Http\Controllers\QuestionCategoryController;
+use App\Http\Controllers\SystemLogController;
 use App\Http\Controllers\TentController;
 use App\Http\Controllers\WashroomController;
 use App\Http\Controllers\WatertapeController;
 use App\Http\Controllers\ZoneController;
 use App\Models\QuestionCategory;
+use App\Models\SystemLog;
 
 /*
 |--------------------------------------------------------------------------
@@ -43,7 +46,6 @@ use App\Models\QuestionCategory;
 // Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 //     return $request->user();
 // });
-
 
 Route::middleware(["auth:api", 'localization'])->group(function () {
     Route::prefix('general')->group(function () {
@@ -113,6 +115,7 @@ Route::middleware(["auth:api", 'localization'])->group(function () {
             Route::post('form-update-answer', [FormController::class, 'FormUpdateAnswer']);
             Route::post('questions-with-answer-ids', [FormController::class, 'QuestionsWithAnswerIds']);
             Route::post('upload-answer-attach', [FormController::class, 'UploadAnswerAttach']);
+            Route::post('send-notification', [FormController::class, 'SendNotification']);
             Route::delete('destroy/{id}', [FormController::class, 'destroy']);
             Route::delete('delete-answer-attach/{id}', [FormController::class, 'DeleteAnswerAttach']);
         });
@@ -147,6 +150,8 @@ Route::middleware(["auth:api", 'localization'])->group(function () {
 
         Route::prefix('statistics')->group(function () {
             Route::get('dashboard-counter', [GeneralController::class, 'DashboardCounter']);
+            Route::get('dashboard-chart', [GeneralController::class, 'DashboardChart']);
+            Route::post('filter-user-chart', [GeneralController::class, 'FilterUserChart']);
         });
 
         //camp assignation
@@ -196,9 +201,16 @@ Route::middleware(["auth:api", 'localization'])->group(function () {
         Route::group(['prefix' => 'logs'], function () {
             Route::post('/', [AuditLogController::class, 'index']);
         });
+        Route::group(['prefix' => 'system_logs'], function () {
+            Route::post('/', [SystemLogController::class, 'index']);
+        });
     });
 
     Route::group(['prefix' => 'gis'], function () {
+        Route::group(['prefix' => 'map'], function () {
+            Route::get('/', [GisController::class, 'index']);
+            Route::get('check-token', [GisController::class, 'CheckToken']);
+        });
         Route::group(['prefix' => 'establishments'], function () {
             Route::get('/', [EstablishmentController::class, 'index']);
             Route::get('/get-data', [EstablishmentController::class, 'get_data']);

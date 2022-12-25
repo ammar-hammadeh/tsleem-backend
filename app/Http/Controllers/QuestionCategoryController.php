@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Question;
+use App\Helper\LogHelper;
 use Illuminate\Http\Request;
 use App\Models\QuestionCategory;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\QuestionCategoryRequest;
-use App\Models\Category;
 
 class QuestionCategoryController extends Controller
 {
@@ -72,6 +74,25 @@ class QuestionCategoryController extends Controller
                 return array_search($el->getKey(), $question_ids);
             });
             $category->getQuestion()->sync($questions);
+
+            $user_id = Auth::user()->id;
+            $old_value = null;
+            $new_value = [
+                'name' => $category->name,
+            ];
+            $module = 'questionCategory';
+            $method_id = 1;
+            $message = __('logTr.addQuestionCategory');
+
+            LogHelper::storeLog(
+                $user_id,
+                json_decode(json_encode($old_value)),
+                json_decode(json_encode($new_value)),
+                $module,
+                $method_id,
+                $message,
+            );
+
             DB::commit();
             return response()->json(['message' => 'تمت اللإضافة بنجاح']);
         } catch (\Exception $e) {
@@ -90,8 +111,29 @@ class QuestionCategoryController extends Controller
         try {
             DB::beginTransaction();
             $questions = Question::find($request->question_ids);
+
+            $user_id = Auth::user()->id;
+            $old_value = [
+                'name' => $category->name,
+            ];
             $category->getQuestion()->sync($questions);
             $category->update(['name' => $request->name]);
+            $new_value = [
+                'name' => $category->name,
+            ];
+            $module = 'questionCategory';
+            $method_id = 2;
+            $message = __('logTr.updateQuestionCategory');
+
+            LogHelper::storeLog(
+                $user_id,
+                json_decode(json_encode($old_value)),
+                json_decode(json_encode($new_value)),
+                $module,
+                $method_id,
+                $message,
+            );
+
             DB::commit();
             return response()->json(['message' => 'تم التعديل بنجاح']);
         } catch (\Exception $e) {
@@ -106,6 +148,24 @@ class QuestionCategoryController extends Controller
         $category = QuestionCategory::find($id);
         if (!$category)
             return response()->json(['message' => 'عذراً هذا العنصر غير موجود'], 500);
+
+        $user_id = Auth::user()->id;
+        $new_value = null;
+        $old_value = [
+            'name' => $category->name,
+        ];
+        $module = 'questionCategory';
+        $method_id = 3;
+        $message = __('logTr.deleteQuestionCategory');
+
+        LogHelper::storeLog(
+            $user_id,
+            json_decode(json_encode($old_value)),
+            json_decode(json_encode($new_value)),
+            $module,
+            $method_id,
+            $message,
+        );
 
         $category->delete();
         return response()->json(['message' => 'تم الحذف بنجاح']);

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Category;
 use App\Models\Type;
+use App\Models\Category;
+use App\Helper\LogHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 class CategoryController extends Controller
@@ -43,6 +45,26 @@ class CategoryController extends Controller
         DB::beginTransaction();
         try {
             $res = Category::create($request->input());
+
+            $user_id = Auth::user()->id;
+            $old_value = null;
+            $new_value = [
+                'name' => $res->name,
+            ];
+            $module = 'category';
+            $method_id = 1;
+            $message = __('logTr.addCategory');
+
+            LogHelper::storeLog(
+                $user_id,
+                json_decode(json_encode($old_value)),
+                json_decode(json_encode($new_value)),
+                $module,
+                $method_id,
+                $message,
+            );
+
+
             DB::commit();
             if ($res) {
                 return response()->json(["message" => "تم إضافة فئة جديدة بنجاح", "category" => $res], 200);
@@ -67,7 +89,27 @@ class CategoryController extends Controller
         $type = Category::find($id);
         DB::beginTransaction();
         try {
+            $user_id = Auth::user()->id;
+            $old_value = [
+                'name' => $type->name,
+            ];
             $type->update($request->input());
+            $new_value = [
+                'name' => $type->name,
+            ];
+            $module = 'category';
+            $method_id = 2;
+            $message = __('logTr.updateCategory');
+
+            LogHelper::storeLog(
+                $user_id,
+                json_decode(json_encode($old_value)),
+                json_decode(json_encode($new_value)),
+                $module,
+                $method_id,
+                $message,
+            );
+
             DB::commit();
             return response()->json(["message" => "تم تحديث الفئة بنجاح"], 200);
         } catch (\Exception $e) {
@@ -87,6 +129,23 @@ class CategoryController extends Controller
     {
         $category = Category::find($id);
         if ($category) {
+            $user_id = Auth::user()->id;
+            $new_value = null;
+            $old_value = [
+                'name' => $category->name,
+            ];
+            $module = 'category';
+            $method_id = 3;
+            $message = __('logTr.deleteCategory');
+
+            LogHelper::storeLog(
+                $user_id,
+                json_decode(json_encode($old_value)),
+                json_decode(json_encode($new_value)),
+                $module,
+                $method_id,
+                $message,
+            );
             $category->delete();
             return response()->json(['message' => 'تم حذف الفئة بنجاح']);
         } else {

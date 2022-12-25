@@ -2,15 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\Camp;
+use App\Models\Type;
 use App\Models\Square;
 use App\Models\Company;
+use App\Helper\LogHelper;
+use App\Jobs\SendEmailJob;
 use App\Models\AssignCamp;
 use Illuminate\Http\Request;
 use App\Models\UserAppointment;
-use App\Http\Requests\AppointmentRequest;
-use App\Models\Type;
+use Modules\Core\Entities\User;
+use Modules\Core\Mail\SendEmail;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\AppointmentRequest;
 
 class AppointmentController extends Controller
 {
@@ -272,10 +277,52 @@ class AppointmentController extends Controller
         if ($oldAppointment)
             return response()->json(['message' => 'You\'ve already delivered this camp'], 500);
 
-        UserAppointment::create($request->all());
+        $user_appointment = UserAppointment::create($request->all());
+
+        $appointment = UserAppointment::with(
+            'getAssignCamps.getCompany',
+            'getAssignCamps.getCamp',
+            'getAssignCamps.getSquare'
+        )->find($user_appointment->id);
+        // appointment
+
+        $user_id = Auth::user()->id;
+        $old_value = null;
+        $new_value = [
+            'company' => $appointment->getAssignCamps->getCompany->name,
+            'camp' => $appointment->getAssignCamps->getCamp->name,
+            'square' => $appointment->getAssignCamps->getSquare->name,
+            'appointment' => $appointment->appointment,
+        ];
+        $module = 'appointment';
+        $method_id = 1;
+        $message = __('logTr.addAppointment');
+
+        LogHelper::storeLog(
+            $user_id,
+            json_decode(json_encode($old_value)),
+            json_decode(json_encode($new_value)),
+            $module,
+            $method_id,
+            $message,
+        );
+
+
         $assignation->update([
             'status' => 'appointment'
         ]);
+        $user_id = Company::where('id', $assignation->receiver_company_id)->value('owner_id');
+        $user = User::find($user_id);
+        $camp = Camp::find($assignation->camp_id);
+        $appoint = Carbon::parse($user_appointment->appointment)->toDateTimeString();
+        sendSMS($user->phone, "تم تحديد موعد تسليم المخيم ( $camp->name ) في ( $appoint )");
+        $Emaildata = array(
+            "name" => $user->name,
+            "body" => "تم تحديد موعد تسليم المخيم ( $camp->name ) في ( $appoint )",
+            "subject" => "تحديد موعد تسليم" . env('APP_NAME')
+        );
+        dispatch(new SendEmailJob($user->email, new SendEmail($Emaildata, "Notification")))->onConnection('database');
+
         return response()->json(['message' => 'Appointment created successfully']);
     }
 
@@ -289,11 +336,47 @@ class AppointmentController extends Controller
         if ($assignation == null)
             return response()->json(['message' => 'please check assignation id and try again'], 500);
 
+        $old = UserAppointment::with(
+            'getAssignCamps.getCompany',
+            'getAssignCamps.getCamp',
+            'getAssignCamps.getSquare'
+        )->find($assignation->id);
+        // appointment
+        $user_id = Auth::user()->id;
+        $old_value = [
+            'company' => $old->getAssignCamps->getCompany->name,
+            'camp' => $old->getAssignCamps->getCamp->name,
+            'square' => $old->getAssignCamps->getSquare->name,
+            'appointment' => $old->appointment,
+        ];
         $appointment->update(
             [
                 'assign_camp_id' => $request->assign_camp_id,
                 'appointment' => $request->appointment
             ]
+        );
+        $new = UserAppointment::with(
+            'getAssignCamps.getCompany',
+            'getAssignCamps.getCamp',
+            'getAssignCamps.getSquare'
+        )->find($assignation->id);
+        $new_value = [
+            'company' => $new->getAssignCamps->getCompany->name,
+            'camp' => $new->getAssignCamps->getCamp->name,
+            'square' => $new->getAssignCamps->getSquare->name,
+            'appointment' => $new->appointment,
+        ];
+        $module = 'appointment';
+        $method_id = 2;
+        $message = __('logTr.updateAppointment');
+
+        LogHelper::storeLog(
+            $user_id,
+            json_decode(json_encode($old_value)),
+            json_decode(json_encode($new_value)),
+            $module,
+            $method_id,
+            $message,
         );
         return response()->json(['message' => 'Appointment updated successfully', 'data' => $request->appointment]);
     }
@@ -305,6 +388,33 @@ class AppointmentController extends Controller
         if (!$appointment)
             return response()->json(['message' => 'please check appointment id and try again'], 500);
 
+        $old = UserAppointment::with(
+            'getAssignCamps.getCompany',
+            'getAssignCamps.getCamp',
+            'getAssignCamps.getSquare'
+        )->find($appointment->id);
+        // appointment
+
+        $user_id = Auth::user()->id;
+        $old_value = null;
+        $new_value = [
+            'company' => $old->getAssignCamps->getCompany->name,
+            'camp' => $old->getAssignCamps->getCamp->name,
+            'square' => $old->getAssignCamps->getSquare->name,
+            'appointment' => $old->appointment,
+        ];
+        $module = 'appointment';
+        $method_id = 3;
+        $message = __('logTr.deleteAppointment');
+
+        LogHelper::storeLog(
+            $user_id,
+            json_decode(json_encode($old_value)),
+            json_decode(json_encode($new_value)),
+            $module,
+            $method_id,
+            $message,
+        );
         $appointment->delete();
         return response()->json(['message' => 'Appointment deleted successfully']);
     }
