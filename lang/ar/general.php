@@ -58,8 +58,12 @@ return [
     'updated' => 'تعديل',
     'created' => 'انشاء',
     'deleted' => 'حذف',
-    'commercial'=>'السجل التجاري',
+    'commercial' => 'السجل التجاري',
     'license' => 'الترخيص',
     'phone' => 'رقم الهاتف',
-    'hardcopyid' => 'رقم الهوية'
+    'hardcopyid' => 'رقم الهوية',
+    'developed_name' => 'الاسم المطور',
+    'is_developed' => 'تم تطويرها',
+    'license' => 'رقم الترخيص',
+    'appointment_date' => "الموعد",
 ];

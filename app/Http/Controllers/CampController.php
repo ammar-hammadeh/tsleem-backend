@@ -41,6 +41,25 @@ class CampController extends Controller
                 'items' => ''
             ],
             [
+                'name' => 'developed_name',
+                'value' => '',
+                'label' => __('general.developed_name'),
+                'type' => 'text',
+                'items' => ''
+            ],
+            [
+                'name' => 'is_developed',
+                'value' => '',
+                'label' => __('general.is_developed'),
+                'type' => 'select',
+                'items' => [
+                    ['name' => '1', 'label' => __('general.yes')],
+                    ['name' => '0', 'label' => __('general.no')]
+                ],
+                'itemText' => 'label',
+                'itemValue' => 'name'
+            ],
+            [
                 'name' => 'square',
                 'value' => '',
                 'label' => __('general.Square'),
@@ -118,6 +137,13 @@ class CampController extends Controller
             });
         }
 
+        if ($request->developed_name != '') {
+            $camps->where('developed_name', 'like', '%' . $request->developed_name . '%');
+        }
+
+        if ($request->is_developed != '') {
+            $camps->where('is_developed', $request->is_developed);
+        }
         // else
         //     $camps->;
 

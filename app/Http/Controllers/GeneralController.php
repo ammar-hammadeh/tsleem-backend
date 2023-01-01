@@ -66,12 +66,6 @@ class GeneralController extends Controller
 
     public function DashboardChart()
     {
-        $assignations_chart_data = AssignCamp::selectRaw('status as lables,count(*) as count')
-            ->groupBy('status')
-            ->get();
-
-        $assignations_chart['lables'] = $assignations_chart_data->pluck('lables');
-        $assignations_chart['count'] = $assignations_chart_data->pluck('count');
 
         $appointments_chart_data = UserAppointment::selectRaw('deliver_status as lables,count(*) as count')
             ->groupBy('deliver_status')
@@ -91,7 +85,6 @@ class GeneralController extends Controller
 
         $data = [
             //Carts
-            'assignations_chart' => $assignations_chart, // التخصيصات بحسب الحالة
             'appointments_chart' => $appointments_chart, // الحجوزات بحسب حالة التسليم
             'camps_chart' => $camps_chart, // المخيمات بحسب الحالة
         ];
@@ -113,6 +106,25 @@ class GeneralController extends Controller
         $users_chart['count'] = $users_chart_data->pluck('count');
         return response()->json(['data' => $users_chart], 200);
     }
+
+    public function FilterAssignCampChart(Request $request)
+    {
+        $assignations_chart_data = AssignCamp::selectRaw('status as lables,count(*) as count')
+            ->groupBy('status');
+        if ($request->type_id) {
+            $type_id = $request->type_id;
+            $assignations_chart_data->whereHas('getCompany.type', function ($query) use ($type_id) {
+                $query->where('id', $type_id);
+            });
+        }
+        $assignations_chart_data->get();
+
+        $assignations_chart['lables'] = $assignations_chart_data->pluck('lables');
+        $assignations_chart['count'] = $assignations_chart_data->pluck('count');
+
+        return response()->json(['data' => $assignations_chart], 200);
+    }
+
     public function TestSMS()
     {
         sendSMS();

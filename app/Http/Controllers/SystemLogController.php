@@ -70,7 +70,7 @@ class SystemLogController extends Controller
                         ['id' => 1, 'name' => __('logTr.insert')],
                         ['id' => 2, 'name' => __('logTr.update')],
                         ['id' => 3, 'name' => __('logTr.delete')],
-                        ['id' => 4, 'name' => __('logTr.delete')],
+                        ['id' => 4, 'name' => __('logTr.changeStatus')],
                         ['id' => 5, 'name' => __('logTr.ResetPassword')],
                         ['id' => 6, 'name' => __('logTr.Register')],
                         ['id' => 7, 'name' => __('logTr.Login')],

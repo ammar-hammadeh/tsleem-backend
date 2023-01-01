@@ -46,13 +46,19 @@ class SystemLog extends Model
 
             case (3):
                 return __('logTr.delete');
-
+                break;
+            case (4):
+                return __('logTr.changeStatus');
+                break;
             case (5):
                 return __('logTr.ResetPassword');
+                break;
             case (6):
                 return __('logTr.Register');
+                break;
             case (7):
                 return __('logTr.Login');
+                break;
 
                 // default:
                 //     return __('logTr.update');

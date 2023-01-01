@@ -13,13 +13,13 @@ class GisController extends Controller
     public function index(Request $request)
     {
         $data = DB::table('camps')
-            ->leftjoin('establishment_plots_lookup', 'camps.est_plot_lookup_id', 'establishment_plots_lookup.id')
+            // ->leftjoin('establishment_plots_lookup', 'camps.est_plot_lookup_id', 'establishment_plots_lookup.id')
             ->leftjoin('square', 'camps.square_id', 'square.id')
             ->leftjoin('assign_camps', 'camps.id', 'assign_camps.camp_id')
             ->leftjoin('companies', 'companies.id', 'assign_camps.receiver_company_id')
-            ->leftjoin('establishments', 'establishment_plots_lookup.establishment_id', 'establishments.id')
-            ->leftjoin('plots', 'establishment_plots_lookup.plot_id', 'plots.id')
-            ->leftjoin('zones', 'plots.zone_id', 'zones.id')
+            // ->leftjoin('establishments', 'establishment_plots_lookup.establishment_id', 'establishments.id')
+            // ->leftjoin('plots', 'establishment_plots_lookup.plot_id', 'plots.id')
+            ->leftjoin('zones', 'square.zone_id', 'zones.id')
             ->leftjoin('locations', 'camps.location_id', 'locations.id')
             ->leftjoin('camp_tents_lookup', 'camps.id', 'camp_tents_lookup.camp_id')
             ->leftjoin('tents', 'tents.id', 'camp_tents_lookup.tent_id')
@@ -27,13 +27,13 @@ class GisController extends Controller
             ->leftjoin('washrooms', 'washrooms.id', 'camp_washroom_lookup.washroom_id')
             ->leftjoin('camp_electrical_meter_lookup', 'camp_electrical_meter_lookup.camp_id', 'camps.id')
             ->leftjoin('electrical_meters', 'camp_electrical_meter_lookup.electrical_meter_id', 'electrical_meters.id')
-            ->select('plots.plot_number', 'camps.name as label', 'establishments.id as establishment_id', 'establishments.name as establishment_name', 'camps.location_id as location_id', 'locations.name as location_name', 'camps.is_developed', 'square.name as developed_camp_label', 'camps.gate', 'tents.name as tent_type', 'zones.id as zone', 'washrooms.wc_number', 'washrooms.wc_category', 'camps.street as street_name', 'washrooms.located_in_gov_area', 'washrooms.toilets_count', 'washrooms.internal_water_tapes_count', 'washrooms.external_water_tapes_count', 'washrooms.total_water_tapes_count', 'washrooms.seated_toilets_count', 'washrooms.urinal_tapes_count', 'washrooms.showers_count', 'washrooms.upper_water_tank', 'electrical_meters.last_read as electrical_meters_number','electrical_meters.id as electrical_meter_id', 'electrical_meters.subscription_number', 'electrical_meters.metric_capacity');
+            ->select('square.name as plot_number', 'camps.name as label', 'companies.id as establishment_id', 'companies.name as establishment_name', 'camps.location_id as location_id', 'locations.name as location_name', 'camps.gate', 'camps.street as street', 'camps.is_developed', 'camps.developed_name as developed_camp_label', 'tents.name as tent_type', 'zones.id as zone', 'washrooms.wc_number', 'washrooms.wc_category', 'washrooms.located_in_gov_area', 'washrooms.toilets_count', 'washrooms.internal_water_tapes_count', 'washrooms.external_water_tapes_count', 'washrooms.total_water_tapes_count', 'washrooms.seated_toilets_count as seated_toilet_count', 'washrooms.urinal_tapes_count', 'washrooms.showers_count', 'washrooms.upper_water_tank', 'electrical_meters.last_read as electrical_meters_number','electrical_meters.id as electrical_meter_id', 'electrical_meters.subscription_number', 'electrical_meters.metric_capacity');
 
 
         // ->select('camps.name as label')->get();
 
         if ($request->square != '')
-            $data->where('square.id', $request->square);
+            $data->where('square.name', $request->square);
         if ($request->camp != '')
             $data->where('camps.id', $request->camp);
         if ($request->camp_status != '')

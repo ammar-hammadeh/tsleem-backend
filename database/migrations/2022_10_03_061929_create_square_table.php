@@ -16,6 +16,7 @@ return new class extends Migration
         Schema::create('square', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique();
+            $table->unsignedBigInteger('zone_id')->nullable();
             $table->timestamps();
         });
     }

@@ -29,6 +29,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\FormTamplateRequest;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Validator;
 
 class FormController extends Controller
 {
@@ -239,6 +240,8 @@ class FormController extends Controller
 
     public function update(FormTamplateRequest $request, $id)
     {
+        // return response()->json(['message' => 'لايمكنك التعديل في الوقت الراهن'], 500);
+
         $form = FormTamplate::find($id);
         if ($form) {
             $signers = $request->signers;
@@ -250,33 +253,91 @@ class FormController extends Controller
                 if ($isCategorized) {
                     if ($isCategorized != $form->isCategorized)
                         DB::table('form_questions')->where('form_id', $form->id)->delete();
-                    $categories = QuestionCategory::find($request->category_ids);
+
+                    $category_ids = $request->category_ids;
+                    $categories = QuestionCategory::find($category_ids)
+                        ->sortBy(function ($el) use ($category_ids) {
+                            return array_search($el->getKey(), $category_ids);
+                        });
                     $form->Categories()->sync($categories);
 
                     //delete old answers for old questions
-                    $questions = DB::table('question_category_relations')
-                        ->whereNotIn('question_category_id', $request->category_ids)
-                        ->pluck('question_id');
-                    TasleemFormAnswers::where('form_id', $form->id)
-                        ->whereNotIn('question_id', $questions)->delete();
+                    // $questions = DB::table('question_category_relations')
+                    //     ->whereNotIn('question_category_id', $request->category_ids)
+                    //     ->pluck('question_id');
+                    // TasleemFormAnswers::where('form_id', $form->id)
+                    //     ->whereNotIn('question_id', $questions)->delete();
                 } else {
                     if ($isCategorized != $form->isCategorized)
                         DB::table('form_categories')->where('form_id', $form->id)->delete();
-                    $questions = Question::find($request->question_ids);
+                    $question_ids = $request->question_ids;
+                    $questions = Question::find($request->question_ids)
+                        ->sortBy(function ($el) use ($question_ids) {
+                            return array_search($el->getKey(), $question_ids);
+                        });
                     $form->Questions()->sync($questions);
 
                     //delete old answers for old questions
-                    TasleemFormAnswers::where('form_id', $form->id)
-                        ->whereNotIn('question_id', $request->question_ids)->delete();
+                    // TasleemFormAnswers::where('form_id', $form->id)
+                    //     ->whereNotIn('question_id', $request->question_ids)->delete();
                 }
 
-                FormSigner::where('form_id', $id)->delete();
-                foreach ($signers as $signer) {
-                    FormSigner::create([
-                        'form_id' => $form->id,
-                        'type_id' => $signer
-                    ]);
+                if ($request->signers) {
+                    FormSigner::where('form_id', $id)->delete();
+                    foreach ($signers as $signer) {
+                        FormSigner::create([
+                            'form_id' => $form->id,
+                            'type_id' => $signer
+                        ]);
+                    }
+                    // people who have to sign
+                    $countSigner = FormSigner::where('form_id', $id)->count();
+
+                    $signFormsByAssignCamps = FormSign::where('form_id', $id)->groupBy('assign_camps_id')->pluck('assign_camps_id')->toArray(); //6
+                    $formTamplate = FormTamplate::pluck('id')->count(); //2
+
+                    foreach ($signFormsByAssignCamps as $signFormsByAssignCamp) {
+                        // people who already signed
+                        $signFormsByUsers = FormSign::where('assign_camps_id', $signFormsByAssignCamp)->where('form_id', $id)->groupBy('user_id')->pluck('user_id')->count(); //6
+                        // formsSigns
+
+                        $formsignes = FormSign::where('assign_camps_id', $signFormsByAssignCamp)->where('form_id', $id)->get();
+                        $assigncamps = AssignCamp::find($signFormsByAssignCamp);
+                        // update form status to signed
+                        if ($countSigner + 1  <= $signFormsByUsers) {
+                            foreach ($formsignes as $formsigne) {
+                                $formsigne->update([
+                                    'form_status' => 'signed'
+                                ]);
+                            }
+                            // signed forms
+                            $signFormsByFormId = FormSign::where('assign_camps_id', $signFormsByAssignCamp)->where('form_status', 'signed')->groupBy('form_id')->pluck('form_id')->count(); //2
+
+                            if ($formTamplate == $signFormsByFormId) {
+                                $assigncamps->update([
+                                    'forms_status' => 'signed',
+                                    'status' => 'deliverd'
+                                ]);
+                            }
+                        } else {
+                            foreach ($formsignes as $formsigne) {
+                                $formsigne->update([
+                                    'form_status' => 'unsigned'
+                                ]);
+                            }
+                            // signed forms
+                            $signFormsByFormId = FormSign::where('assign_camps_id', $signFormsByAssignCamp)->where('form_status', 'signed')->groupBy('form_id')->pluck('form_id')->count(); //2
+
+                            if ($formTamplate != $signFormsByFormId) {
+                                $assigncamps->update([
+                                    'forms_status' => 'unsigned',
+                                    'status' => 'answered'
+                                ]);
+                            }
+                        }
+                    }
                 }
+
 
                 $user_id = Auth::user()->id;
                 $old_value = [
@@ -642,6 +703,7 @@ class FormController extends Controller
 
     public function FormUpdateAnswer(Request $request)
     {
+
         $form = FormTamplate::find($request->form_id);
 
         $answers = $request->answer;
@@ -705,13 +767,6 @@ class FormController extends Controller
                 $assign_camp->update([
                     'status' => 'answered'
                 ]);
-                // $signers = FormSigner::where('form_id', $request->form_id)->pluck('type_id')->toArray();
-                // $notificationMessage = "يرجى توقيع محضر التسليم";
-                // $usersByType = User::whereIn('type_id', $signers->type_id)->get();
-                // foreach ($usersByType as $userByType) {
-                //     $link = "/appointments/$request->assign_camps_id/form";
-                //     (new NotificationController)->addNotification($userByType->id, $notificationMessage, $link);
-                // }
             }
         } else {
 
@@ -778,6 +833,16 @@ class FormController extends Controller
 
     public function UploadAnswerAttach(Request $request)
     {
+
+        // $validator = Validator::make($request->all(), [
+        //     'answer_attach' => 'nullable|image|mimes:jpg,png,jpeg',
+        // ]);
+
+        // if ($validator->fails()) {
+        //     return response()->json(["message" => "Please Check errors", "errors" => $validator->errors()], 422);
+        // }
+
+
         DB::beginTransaction();
         try {
             if ($request->id == "null") {
@@ -797,12 +862,15 @@ class FormController extends Controller
             if ($q != null) {
                 $file_array = array();
                 foreach ($request->answer_attach as $attach) {
-                    $att = fileManagerHelper::storefile($answer->id, $attach, 'answers');
-                    $file = AnswersAttachement::create([
-                        'path' => $att,
-                        'answer_id' => $answer->id,
-                    ]);
-                    array_push($file_array, $file);
+                    $att = $this->storefile($answer->id, $attach, 'answers');
+                    if ($att['status']) {
+                        // return $att = Storage::disk(env('DISK'))->put('answers/' . $answer->id, $attach, 'public');
+                        $file = AnswersAttachement::create([
+                            'path' => $att['file'],
+                            'answer_id' => $answer->id,
+                        ]);
+                        array_push($file_array, $file);
+                    }
                 }
             } else
                 return response()->json(["message" => "not found"], 500);
@@ -813,13 +881,28 @@ class FormController extends Controller
             return response()->json(["message" => "fail", "error" => $e->getMessage()], 500);
         }
     }
+    private function storefile($customer_id, $request_file, $storage)
+    {
+        try {
+            $filename = Storage::disk(env('DISK'))->put(
+                $storage . '/' . $customer_id,
+                $request_file,
+                'public'
+            );
+
+            return array('message' => 'success', 'file' => $filename, 'status' => true);
+        } catch (\Exception $e) {
+            return array('file' => null, 'status' => false, 'message' => $e->getMessage());
+        }
+    }
 
     public function DeleteAnswerAttach($id)
     {
         $answerAttach = AnswersAttachement::find($id);
+        $image = DB::table('answers_attachement')->find($id);
         if ($answerAttach != null) {
-            if (Storage::disk(env('DISK'))->exists($answerAttach->path)) {
-                Storage::delete($answerAttach->path);
+            if (Storage::disk(env('DISK'))->exists($image->path)) {
+                Storage::disk(env('DISK'))->delete($image->path);
             }
             $answerAttach->delete();
             return response()->json(['message' => 'attachement deleted succesfully'], 200);

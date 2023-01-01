@@ -54,7 +54,7 @@ class AuthController extends Controller
             $old_value = null;
             $new_value = null;
             $module = 'users';
-            $method_id = 6;
+            $method_id = 7;
             $message = __('logTr.Login');
 
             LogHelper::storeLog(
@@ -122,7 +122,7 @@ class AuthController extends Controller
             if ($request->category_id) {
                 $cat = Category::find($request->category_id);
                 $user->Category()->sync($cat);
-            }   
+            }
 
 
             if (Type::where('id', $request->type_id)->value('code') != 'admin') {
@@ -163,8 +163,8 @@ class AuthController extends Controller
                     'email' => $user->email,
                     'type' => $user->type->name,
                     'phone' => $user->phone,
-                    'city' => $user->city->name,
-                    'category_id' => $user->category->name,
+                    'city' => $user->city_id ? $user->city->name : null,
+                    'category_id' => $user->category_id ? $user->category->name : null,
                 ], $result['newValue']);
 
                 $module = 'users';

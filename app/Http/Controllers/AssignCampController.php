@@ -64,6 +64,22 @@ class AssignCampController extends Controller
                 'itemValue' => 'id'
             ],
             [
+                'name' => 'license',
+                'value' => '',
+                'label' => __('general.license'),
+                'type' => 'text',
+                'items' => ''
+            ],
+            [
+                'name' => 'type_id',
+                'value' => '',
+                'label' => __('general.user type'),
+                'type' => 'select',
+                'items' => Type::whereIn('code', ['raft_office', 'raft_company', 'service_provider'])->get(),
+                'itemText' => 'name',
+                'itemValue' => 'id'
+            ],
+            [
                 'name' => 'status',
                 'value' => '',
                 'label' => __('general.status'),
@@ -130,6 +146,20 @@ class AssignCampController extends Controller
             $company_id = $request->receiver_company_id;
             $assignedCampsID->whereHas('getCompany', function ($query) use ($company_id) {
                 $query->where('id', $company_id);
+            });
+        }
+
+        if ($request->license != '') {
+            $license = $request->license;
+            $assignedCampsID->whereHas('getCompany', function ($query) use ($license) {
+                $query->where('license', $license);
+            });
+        }
+
+        if ($request->type_id != '') {
+            $type_id = $request->type_id;
+            $assignedCampsID->whereHas('getCompany.type', function ($query) use ($type_id) {
+                $query->where('id', $type_id);
             });
         }
 

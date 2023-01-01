@@ -27,6 +27,7 @@ return new class extends Migration
             $table->string('owner_name')->nullable();
             $table->string('owner_hardcopyid')->nullable();
             $table->string('commercial_expiration')->nullable();
+            $table->string('color')->nullable();
             $table->timestamp('deleted_at')->nullable();
             $table->timestamps();
         });

@@ -2,6 +2,7 @@
 
 namespace Modules\Core\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\City;
 use App\Models\Type;
 use App\Models\Company;
@@ -16,6 +17,7 @@ use Modules\Core\Entities\User;
 use App\Mail\DisableAccountMail;
 use Modules\Core\Mail\SendEmail;
 use App\Helper\fileManagerHelper;
+use App\Exports\PendingUserExport;
 use App\Models\CompanyAttachement;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
@@ -23,6 +25,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Maatwebsite\Excel\Facades\Excel;
 use App\Models\EngineerOffceCategories;
 use Illuminate\Support\Facades\Storage;
 use Modules\Core\Rules\MatchOldPassword;
@@ -63,8 +66,34 @@ class UserController extends Controller
                 'type' => 'text',
                 'items' => ''
             ],
-
-
+            [
+                'name' => 'license',
+                'value' => '',
+                'label' => __('general.license'),
+                'type' => 'text',
+                'items' => '',
+            ],
+            [
+                'name' => 'phone',
+                'value' => '',
+                'label' => __('general.phone'),
+                'type' => 'text',
+                'items' => '',
+            ],
+            [
+                'name' => 'commercial',
+                'value' => '',
+                'label' => __('general.commercial'),
+                'type' => 'text',
+                'items' => '',
+            ],
+            [
+                'name' => 'hardcopyid',
+                'value' => '',
+                'label' => __('general.hardcopyid'),
+                'type' => 'text',
+                'items' => '',
+            ]
         ];
         return $filters;
     }
@@ -143,37 +172,6 @@ class UserController extends Controller
                 'itemText' => 'label',
                 'itemValue' => 'name'
             ],
-            [
-                'name' => 'phone',
-                'value' => '',
-                'label' => __('general.phone'),
-                'type' => 'text',
-                'items' => '',
-            ],
-            [
-                'name' => 'license',
-                'value' => '',
-                'label' => __('general.license'),
-                'type' => 'text',
-                'items' => '',
-            ],
-            [
-                'name' => 'commercial',
-                'value' => '',
-                'label' => __('general.commercial'),
-                'type' => 'text',
-                'items' => '',
-            ],
-            [
-                'name' => 'hardcopyid',
-                'value' => '',
-                'label' => __('general.hardcopyid'),
-                'type' => 'text',
-                'items' => '',
-            ]
-
-
-
         );
 
         $users = User::whereRaw('((parent_id is null) or (parent_id is not null and type_id =' . $office_type . '))')
@@ -1134,9 +1132,9 @@ class UserController extends Controller
                 return response()->json(["message" => "signature updated successfully", 'user' => $user, 'signeture' => $signature], 200);
             }
         } else {
-
+            // return $request->all();
             $validator = Validator::make($request->all(), [
-                'name' => 'required|string',
+                'name' => 'nullable|string',
                 'email' => 'required|email|unique:users,email,' . $id,
                 'phone' => 'required|string',
                 'city_id' => 'nullable',
@@ -1159,35 +1157,53 @@ class UserController extends Controller
             try {
 
                 $user = User::find($id);
-                $user->update(array_merge($validator->validated(), $data));
-                if ($request->category_id) {
-                    $cate = Category::find($request->category_id);
-                    $user->Category()->sync($cate);
-                }
-                if (Auth::check()) {
-                    $user_type = Auth::user()->type_id;
-                    if (Type::where('id', $user_type)->value('code') == 'admin') {
-                        if ($user && $request->roles) {
-                            $user->syncRoles($request->roles);
-                        }
-                    }
-                }
-
-                // log section
-                $user_id = Auth::user()->id;;
+                // for log
+                $user_city = $user->city_id ? $user->city->name : null;
+                $user_category = $user->category_id ? $user->category->name : null;
                 $old_value = [
                     'name' => $user->name,
                     'email' => $user->email,
                     'phone' => $user->phone,
-                    'city' => $user->city->name,
-                    'category' => $user->category->name,
+                    'city' => $user_city,
+                    'category' => $user_category,
                 ];
+
+                if ($request->city_id) {
+                    $data['city_id'] = $request->city_id;
+                }
+                $user->update(array_merge([
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'phone' => $request->phone,
+                ], $data));
+
+
+                if ($request->category_id) {
+                    $cate = Category::find($request->category_id);
+                    $user->Category()->sync($cate);
+                }
+                // if (Auth::check()) {
+                $user_type = Auth::user()->type_id;
+                if (Type::where('id', $user_type)->value('code') == 'admin') {
+                    if ($user && $request->roles) {
+                        $user->syncRoles($request->roles);
+                    }
+                }
+                // }
+
+                // log section
+                $user_id = Auth::user()->id;
+
+                $newUser = User::find($user_id);
+                $new_user_city = $newUser->city_id ? $newUser->city->name : null;
+                $new_user_category = $newUser->category_id ? $newUser->category->name : null;
+
                 $new_value = [
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'phone' => $user->phone,
-                    'city' => $user->city->name,
-                    'category' => $user->category->name,
+                    'name' => $newUser->name,
+                    'email' => $newUser->email,
+                    'phone' => $newUser->phone,
+                    'city' => $new_user_city,
+                    'category' => $new_user_category,
                 ];
                 $module = 'users';
                 $method_id = 2;
@@ -1313,23 +1329,54 @@ class UserController extends Controller
         $filters = $this->filters();
         $status = $request->status ? $request->status : '';
 
-        array_push($filters, [
-            'name' => 'status',
-            'value' => $status,
-            'label' => __('general.status'),
-            'type' => 'auto-complete',
-            'items' => [
-                ['name' => 'pending', 'label' => __('general.pending')],
-                ['name' => 'review', 'label' => __('general.review')],
+        // array_push($filters, [
+        //     'name' => 'status',
+        //     'value' => $status,
+        //     'label' => __('general.status'),
+        //     'type' => 'auto-complete',
+        //     'items' => [
+        //         ['name' => 'pending', 'label' => __('general.pending')],
+        //         ['name' => 'review', 'label' => __('general.review')],
+        //     ],
+        //     'itemText' => 'label',
+        //     'itemValue' => 'name'
+        // ]);
+
+        //new filters
+        array_push(
+            $filters,
+            [
+                'name' => 'type_id',
+                'value' => '',
+                'label' => __('general.user type'),
+                'type' => 'auto-complete',
+                'items' => Type::whereNull('deleted_at')->get(),
+                'itemText' => 'name',
+                'itemValue' => 'id'
             ],
-            'itemText' => 'label',
-            'itemValue' => 'name'
-        ]);
+            [
+                'name' => 'status',
+                'value' => $status,
+                'label' => __('general.status'),
+                'type' => 'auto-complete',
+                'items' => [
+                    ['name' => 'pending', 'label' => __('general.pending')],
+                    ['name' => 'active', 'label' => __('general.active')],
+                    ['name' => 'disabled', 'label' => __('general.disabled')],
+                    ['name' => 'review', 'label' => __('general.review')],
+                    ['name' => 'rejected', 'label' => __('general.rejected')],
+                ],
+                'itemText' => 'label',
+                'itemValue' => 'name'
+            ],
+        );
+
+
 
         $users = User::whereIn('status', ['pending', 'review'])->with('Type', 'Company');
 
-        if ($request->status)
-            $users->where('users.status', $request->status);
+        // if ($request->status)
+        //     $users->where('users.status', $request->status);
 
         if ($request->name) {
             $users->where('users.name', 'like', '%' . $request->name . '%');
@@ -1350,6 +1397,22 @@ class UserController extends Controller
         if ($request->end)
             $users->whereDate('created_at', '<=', $request->end);
 
+        //new filters
+        if ($request->hardcopyid)
+            $users->where('users.hardcopyid', $request->hardcopyid);
+
+        if ($request->phone)
+            $users->where('users.phone', $request->phone);
+
+        if ($request->license)
+            $users->whereHas('Company', function ($query) use ($request) {
+                $query->where('license', $request->license);
+            });
+        if ($request->commercial)
+            $users->whereHas('Company', function ($query) use ($request) {
+                $query->where('commercial', $request->commercial);
+            });
+
 
         $users = $users->paginate($paginate);
         return response()->json(['data' => $users, 'filters' => $filters], 200);
@@ -1364,5 +1427,47 @@ class UserController extends Controller
             return response()->json(['message' => 'تم تعديل الصلاحيات بنجاح', 'data' => $user], 200);
         }
         return response()->json(['message' => 'لايوجد معلومات مطابقة'], 404);
+    }
+
+    public function exportPendingUsers(Request $request)
+    {
+
+        $users = User::with('Company', 'City', 'Type')->whereIn('status', ['pending', 'review'])->with('Type', 'Company');
+
+        if ($request->name) {
+            $users->where('users.name', 'like', '%' . $request->name . '%');
+        }
+        if ($request->company_name) {
+            $users->whereHas('Company', function ($query) use ($request) {
+                $query->where('name', $request->company_name);
+            });
+        }
+        if ($request->type_id)
+            $users->where('users.type_id', $request->type_id);
+
+        if ($request->status)
+            $users->where('users.status', $request->status);
+
+        if ($request->start)
+            $users->whereDate('created_at', '>=', $request->start);
+        if ($request->end)
+            $users->whereDate('created_at', '<=', $request->end);
+        if ($request->hardcopyid)
+            $users->where('users.hardcopyid', $request->hardcopyid);
+        if ($request->phone)
+            $users->where('users.phone', $request->phone);
+        if ($request->license)
+            $users->whereHas('Company', function ($query) use ($request) {
+                $query->where('license', $request->license);
+            });
+        if ($request->commercial)
+            $users->whereHas('Company', function ($query) use ($request) {
+                $query->where('commercial', $request->commercial);
+            });
+
+        $users = $users->get();
+
+        $currentTime = Carbon::now();
+        return Excel::download(new PendingUserExport($users), 'pending_users_' . $currentTime . '.xlsx');
     }
 }

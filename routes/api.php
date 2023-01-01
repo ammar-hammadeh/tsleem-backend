@@ -152,6 +152,7 @@ Route::middleware(["auth:api", 'localization'])->group(function () {
             Route::get('dashboard-counter', [GeneralController::class, 'DashboardCounter']);
             Route::get('dashboard-chart', [GeneralController::class, 'DashboardChart']);
             Route::post('filter-user-chart', [GeneralController::class, 'FilterUserChart']);
+            Route::post('filter-assign-camp-chart', [GeneralController::class, 'FilterAssignCampChart']);
         });
 
         //camp assignation

@@ -69,7 +69,7 @@ Route::middleware(['auth:api', "localization"])->group(function () {
         Route::post('/update-me', [UserController::class, 'updateMe']);
         // Route::get('/{id}', [UserController::class, 'view'])->name('user-view');
         // Route::post('/create', [UserController::class, 'create'])->name('user-create');
-
+        Route::post('/exportPendingUsers', [UserController::class, 'exportPendingUsers'])->name('export-pending-users');
     });
     // Route::get('temp', function () {
 

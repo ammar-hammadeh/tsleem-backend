@@ -50,6 +50,13 @@ class AppointmentController extends Controller
             //     'itemValue' => 'id'
             // ],
             [
+                'name' => 'appointment',
+                'value' => '',
+                'label' => __('general.appointment_date'),
+                'type' => 'datee',
+                'items' => ''
+            ],
+            [
                 'name' => 'square',
                 'value' => '',
                 'label' => __('general.Square'),
@@ -79,20 +86,15 @@ class AppointmentController extends Controller
                 'itemValue' => 'id'
             ],
             [
-                'name' => 'status',
+                'name' => 'type_id',
                 'value' => '',
-                'label' => __('general.status'),
+                'label' => __('general.user type'),
                 'type' => 'select',
-                'items' => [
-                    ['name' => 'pending', 'label' => __('general.pending')],
-                    ['name' => 'returned', 'label' => __('general.Returned')],
-                    ['name' => 'appointment', 'label' => __('general.Appointment')],
-                    ['name' => 'answered', 'label' => __('general.answered')],
-                    ['name' => 'deliverd', 'label' => __('general.Deliverd')]
-                ],
-                'itemText' => 'label',
-                'itemValue' => 'name'
+                'items' => Type::whereIn('code', ['raft_office', 'raft_company', 'service_provider'])->get(),
+                'itemText' => 'name',
+                'itemValue' => 'id'
             ],
+
 
         ];
         return $filters;
@@ -119,6 +121,24 @@ class AppointmentController extends Controller
                 'items' => Company::whereHas('Type', function ($query) {
                     $query->whereIn('code', ['raft_company', 'service_provider', 'raft_office']);
                 })->get(),
+                'itemText' => 'name',
+                'itemValue' => 'id'
+            ],
+            [
+                'name' => 'square',
+                'value' => '',
+                'label' => __('general.Square'),
+                'type' => 'auto-complete',
+                'items' => Square::get(),
+                'itemText' => 'name',
+                'itemValue' => 'id'
+            ],
+            [
+                'name' => 'camp',
+                'value' => '',
+                'label' => __('general.Camp'),
+                'type' => 'auto-complete',
+                'items' => Camp::get(),
                 'itemText' => 'name',
                 'itemValue' => 'id'
             ],
@@ -163,7 +183,7 @@ class AppointmentController extends Controller
         if ($request->receiver_company_id != '')
             $IDAssignation->where('receiver_company_id', $request->receiver_company_id);
         if ($request->square != '')
-            $IDAssignation->where('square_id', $request->square);
+            $IDAssignation->where('square.id', $request->square);
         if ($request->camp != '')
             $IDAssignation->where('camps.id', $request->camp);
         if ($request->type_id != '')
@@ -196,6 +216,7 @@ class AppointmentController extends Controller
             $paginate = env('PAGINATE');
         $IDAppointments =  UserAppointment::join('assign_camps', 'assign_camps.id', 'users_appointments.assign_camp_id')
             ->join('companies', 'companies.id', 'assign_camps.receiver_company_id')
+            ->join('types', 'companies.type_id', 'types.id')
             ->join('camps', 'camps.id', 'assign_camps.camp_id')
             ->join('square', 'square.id', 'assign_camps.square_id')
             ->selectRaw(
@@ -216,10 +237,33 @@ class AppointmentController extends Controller
             );
 
         //filters
+        $filters = $this->filters();
+        $status = $request->status ? $request->status : '';
+        array_push(
+            $filters,
+            [
+                'name' => 'status',
+                'value' => $status,
+                'label' => __('general.status'),
+                'type' => 'select',
+                'items' => [
+                    ['name' => 'pending', 'label' => __('general.pending')],
+                    // ['name' => 'returned', 'label' => __('general.Returned')],
+                    ['name' => 'appointment', 'label' => __('general.Appointment')],
+                    ['name' => 'answered', 'label' => __('general.answered')],
+                    ['name' => 'deliverd', 'label' => __('general.Deliverd')]
+                ],
+                'itemText' => 'label',
+                'itemValue' => 'name'
+            ],
+        );
+
         if ($request->start != '')
             $IDAppointments->whereDate('appointment', '>=', $request->start);
         if ($request->end != '')
             $IDAppointments->whereDate('appointment', '<=', $request->end);
+        if ($request->appointment != '')
+            $IDAppointments->whereDate('appointment', $request->appointment);
         if ($request->appointment_status != '')
             $IDAppointments->where('appointment_status', $request->appointment_status);
         if ($request->deliver_status != '')
@@ -232,6 +276,8 @@ class AppointmentController extends Controller
             $IDAppointments->where('camps.id', $request->camp);
         if ($request->company != '')
             $IDAppointments->where('companies.id', $request->company);
+        if ($request->type_id != '')
+            $IDAppointments->where('companies.type_id', $request->type_id);
 
         if ($request->status) {
             $IDAppointments->where('assign_camps.status', $request->status);
@@ -256,7 +302,7 @@ class AppointmentController extends Controller
 
         $result = $IDAppointments->paginate($paginate);
 
-        return response()->json(['message' => 'appointments got successfully', 'filters' => $this->filters(), 'data' => $result]);
+        return response()->json(['message' => 'appointments got successfully', 'filters' => $filters, 'data' => $result]);
     }
 
 

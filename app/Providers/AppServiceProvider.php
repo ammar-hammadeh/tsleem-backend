@@ -2,8 +2,11 @@
 
 namespace App\Providers;
 
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -37,5 +40,14 @@ class AppServiceProvider extends ServiceProvider
                 );
             });
         }
+
+        // DB::listen(function ($query) {
+        //     $date = date('Y-m-d');
+        //     $dateTime = date('Y-m-d H:m:s');
+        //     File::append(
+        //         storage_path("/logs/$date.log"),
+        //         $dateTime . "::" . $query->sql . ' [' . implode(', ', $query->bindings) . ']' . PHP_EOL
+        //     );
+        // });
     }
 }
